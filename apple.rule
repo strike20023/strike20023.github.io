@@ -1,4 +1,5 @@
 DOMAIN-WILDCARD,news*.apple.com
 DOMAIN-WILDCARD,gsp*-ssl.ls.apple.com
-DOMAIN,gsas.apple.com
 DOMAIN,apple-relay.apple.com
+DOMAIN,bag.itunes.apple.com
+DOMAIN,gsas.apple.com
