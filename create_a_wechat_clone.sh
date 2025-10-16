@@ -26,3 +26,5 @@ sudo plutil -replace CFBundleIdentifier -string "com.tencent.WeiXin" $APP2/Conte
 sudo codesign --force --deep --sign - $APP2
 sudo xattr -r -d com.apple.quarantine $APP2
 
+open $APP
+open $APP2
