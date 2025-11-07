@@ -7,7 +7,7 @@ total_steps=15
 current_step=0
 current_desc=""
 
-trap 'printf "\n发生错误（第 %d/%d 步）：%s\n" "$current_step" "$total_steps" "$current_desc"; exit 1' ERR
+trap 'status=$?; if [ "$status" -ne 0 ]; then printf "\n发生错误（第 %d/%d 步）：%s\n" "$current_step" "$total_steps" "$current_desc"; fi' EXIT
 
 update_progress() {
   percent=$(( current_step * 100 / total_steps ))
