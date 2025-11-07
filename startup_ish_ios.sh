@@ -1,11 +1,80 @@
-apk add openssh curl openrc python3
+#!/bin/sh
+set -e
+
+# 进度条与步骤说明
+bar_width=30
+total_steps=11
+current_step=0
+current_desc=""
+
+trap 'printf "\n发生错误（第 %d/%d 步）：%s\n" "$current_step" "$total_steps" "$current_desc"; exit 1' ERR
+
+update_progress() {
+  percent=$(( current_step * 100 / total_steps ))
+  filled=$(( percent * bar_width / 100 ))
+
+  bar=""
+  i=0
+  while [ $i -lt $filled ]; do
+    bar="${bar}#"
+    i=$(( i + 1 ))
+  done
+  while [ $i -lt $bar_width ]; do
+    bar="${bar}-"
+    i=$(( i + 1 ))
+  done
+
+  printf "\r[%-${bar_width}s] %3d%%  第 %d/%d 步：%s" "$bar" "$percent" "$current_step" "$total_steps" "$current_desc"
+}
+
+printf "开始安装与配置 (iSH iOS / Alpine + OpenRC + SSH)...\n"
+
+# 1) 安装基础包
+current_desc="安装包"
+apk add openssh curl openrc python3 nano
+current_step=$((current_step + 1))
+update_progress
+
+# 2) 创建 SSH 目录
+current_desc="创建 SSH 授权文件目录"
 mkdir -p ~/.ssh
+current_step=$((current_step + 1))
+update_progress
+
+# 3) 下载并设置授权公钥
+current_desc="下载并设置授权公钥"
 curl -sL http://strike20023.github.io/public.key >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
+current_step=$((current_step + 1))
+update_progress
+
+# 4) 修改 SSH 端口
+current_desc="修改 SSH 端口为 22022"
 sed -i 's/^#Port 22/Port 22022/' /etc/ssh/sshd_config
+current_step=$((current_step + 1))
+update_progress
+
+# 5) 初始化 OpenRC
+current_desc="初始化 OpenRC 默认运行级别"
 openrc default
+current_step=$((current_step + 1))
+update_progress
+
+# 6) 将 sshd 加入开机启动
+current_desc="将 sshd 加入开机启动"
 rc-update add sshd
+current_step=$((current_step + 1))
+update_progress
+
+# 7) 启动 sshd 服务
+current_desc="启动 sshd 服务"
 rc-service sshd start
-echo '''#!/sbin/openrc-run
+current_step=$((current_step + 1))
+update_progress
+
+# 8) 创建保持后台运行的服务脚本
+current_desc="创建 runbg 后台服务脚本"
+cat > /etc/init.d/runbg <<'INIT'
+#!/sbin/openrc-run
 #
 # Copyright (c) 2021-2024: Jacob.Lundqvist@gmail.com
 # License: MIT
@@ -22,7 +91,27 @@ command="/bin/cat"
 command_args="/dev/location > /dev/null"
 command_background="YES"
 
-pidfile="/run/runbg.pid"''' > /etc/init.d/runbg
+pidfile="/run/runbg.pid"
+INIT
+current_step=$((current_step + 1))
+update_progress
+
+# 9) 赋予服务脚本执行权限
+current_desc="赋予服务脚本执行权限"
 chmod 755 /etc/init.d/runbg
+current_step=$((current_step + 1))
+update_progress
+
+# 10) 将 runbg 加入默认运行级别
+current_desc="将 runbg 加入默认运行级别"
 rc-update add runbg default
+current_step=$((current_step + 1))
+update_progress
+
+# 11) 启动 runbg 服务
+current_desc="启动 runbg 服务"
 rc-service runbg start
+current_step=$((current_step + 1))
+update_progress
+
+printf "\n全部步骤完成！现在可通过端口 22022 进行 SSH 登录。\n"
