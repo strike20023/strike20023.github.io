@@ -2,7 +2,7 @@
 set -e
 
 # 进度条与步骤说明
-bar_width=30
+bar_width=5
 total_steps=15
 current_step=0
 current_desc=""
@@ -67,7 +67,9 @@ update_progress
 
 # 7) 启动 sshd 服务
 current_desc="启动 sshd 服务"
-rc-service sshd start
+if ! rc-service sshd status; then
+    rc-service sshd start
+fi
 current_step=$((current_step + 1))
 update_progress
 
@@ -107,7 +109,9 @@ update_progress
 
 # 11) 启动 runbg 服务
 current_desc="启动 runbg 服务"
-rc-service runbg start
+if ! rc-service runbg status; then
+    rc-service runbg start
+fi
 current_step=$((current_step + 1))
 update_progress
 
@@ -128,7 +132,8 @@ cat > /etc/init.d/socks5 <<'INIT'
 
 description="Starts a socks5 proxy server on port 8809"
 
-command="/usr/local/bin/socks5.sh"
+command="/usr/bin/python3"
+command_args="/usr/local/bin/socks5.sh"
 command_background="YES"
 
 pidfile="/run/socks5.pid"
@@ -144,7 +149,9 @@ update_progress
 
 # 15）启动 socks5 服务
 current_desc="启动 socks5 服务"
-rc-service socks5 start
+if ! rc-service socks5 status; then
+    rc-service socks5 start
+fi
 current_step=$((current_step + 1))
 update_progress
 
