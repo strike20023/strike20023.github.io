@@ -3,7 +3,7 @@ set -e
 
 # 进度条与步骤说明
 bar_width=5
-total_steps=15
+total_steps=19
 current_step=0
 current_desc=""
 
@@ -141,13 +141,19 @@ INIT
 current_step=$((current_step + 1))
 update_progress
 
-# 14）将 socks5 加入默认运行级别
+# 14) 赋予服务脚本执行权限
+current_desc="赋予服务脚本执行权限"
+chmod 755 /etc/init.d/socks5
+current_step=$((current_step + 1))
+update_progress
+
+# 15）将 socks5 加入默认运行级别
 current_desc="将 socks5 加入默认运行级别"
 rc-update add socks5 default
 current_step=$((current_step + 1))
 update_progress
 
-# 15）启动 socks5 服务
+# 16）启动 socks5 服务
 current_desc="启动 socks5 服务"
 if ! rc-service socks5 status; then
     rc-service socks5 start
@@ -155,19 +161,19 @@ fi
 current_step=$((current_step + 1))
 update_progress
 
-# 16) 修改 zsh 为默认 shell
+# 17) 修改 zsh 为默认 shell
 current_desc="修改 zsh 为默认 shell"
 chsh -s /bin/zsh
 current_step=$((current_step + 1))
 update_progress
 
-# 17) 安装oh-my-zsh
+# 18) 安装oh-my-zsh
 current_desc="安装oh-my-zsh"
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 current_step=$((current_step + 1))
 update_progress
 
-# 18) 限制oh-my-zsh的更新
+# 19) 限制oh-my-zsh的更新
 
 current_desc="限制oh-my-zsh的更新"
 echo "DISABLE_AUTO_UPDATE=true" >> ~/.zshrc
