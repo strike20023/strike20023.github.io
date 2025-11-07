@@ -30,8 +30,8 @@ update_progress() {
 printf "开始安装与配置 (iSH iOS / Alpine + OpenRC + SSH)...\n"
 
 # 1) 安装基础包
-current_desc="安装包"
-apk add openssh curl openrc python3 nano
+current_desc="安装apk包"
+apk add openssh curl openrc python3 nano zsh
 current_step=$((current_step + 1))
 update_progress
 
@@ -148,5 +148,25 @@ rc-service socks5 start
 current_step=$((current_step + 1))
 update_progress
 
+# 16) 修改 zsh 为默认 shell
+current_desc="修改 zsh 为默认 shell"
+chsh -s /bin/zsh
+current_step=$((current_step + 1))
+update_progress
+
+# 17) 安装oh-my-zsh
+current_desc="安装oh-my-zsh"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+current_step=$((current_step + 1))
+update_progress
+
+# 18) 限制oh-my-zsh的更新
+
+current_desc="限制oh-my-zsh的更新"
+echo "DISABLE_AUTO_UPDATE=true" >> ~/.zshrc
+current_step=$((current_step + 1))
+update_progress
+
+zsh
 printf "\n全部步骤完成！现在可通过端口 22022 进行 SSH 登录。socks5 代理端口为 8809\n"
 ## wget -qO- https://strike20023.github.io/ish_ios_startup.sh | sh
