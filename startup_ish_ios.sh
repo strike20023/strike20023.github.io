@@ -3,7 +3,7 @@ set -e
 
 # 进度条与步骤说明
 bar_width=30
-total_steps=11
+total_steps=15
 current_step=0
 current_desc=""
 
@@ -76,9 +76,6 @@ current_desc="创建 runbg 后台服务脚本"
 cat > /etc/init.d/runbg <<'INIT'
 #!/sbin/openrc-run
 #
-# Copyright (c) 2021-2024: Jacob.Lundqvist@gmail.com
-# License: MIT
-#
 # This service reads the GPS and discards the output to /dev/null.
 # This is not tracking you in any way. The sole purpose of this
 # is to ensure an iOS program continues to run in the background.
@@ -114,4 +111,42 @@ rc-service runbg start
 current_step=$((current_step + 1))
 update_progress
 
-printf "\n全部步骤完成！现在可通过端口 22022 进行 SSH 登录。\n"
+# 12) 下载socks5代理脚本并且部署
+current_desc="下载socks5代理脚本并且部署"
+curl -sL https://strike20023.github.io/socks5_server.py > /usr/local/bin/socks5.sh && chmod 755 /usr/local/bin/socks5.sh
+current_step=$((current_step + 1))
+update_progress
+
+# 13）创建 socks5 后台服务脚本"
+
+current_desc="创建 socks5 后台服务脚本"
+cat > /etc/init.d/socks5 <<'INIT'
+#!/sbin/openrc-run
+#
+# This service starts a socks5 proxy server on port 8809.
+#
+
+description="Starts a socks5 proxy server on port 8809"
+
+command="/usr/local/bin/socks5.sh"
+command_background="YES"
+
+pidfile="/run/socks5.pid"
+INIT
+current_step=$((current_step + 1))
+update_progress
+
+# 14）将 socks5 加入默认运行级别
+current_desc="将 socks5 加入默认运行级别"
+rc-update add socks5 default
+current_step=$((current_step + 1))
+update_progress
+
+# 15）启动 socks5 服务
+current_desc="启动 socks5 服务"
+rc-service socks5 start
+current_step=$((current_step + 1))
+update_progress
+
+printf "\n全部步骤完成！现在可通过端口 22022 进行 SSH 登录。socks5 代理端口为 8809\n"
+## wget -qO- https://strike20023.github.io/ish_ios_startup.sh | sh
