@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>图片边界框可视化 | BBox Viewer</title>
+    <style>
+      :root {
+        --bg: #0f1216;
+        --panel: #161a20;
+        --border: #2a313b;
+        --text: #e6e9ef;
+        --muted: #a7b0bf;
+        --accent: #3d7bfd;
+        --error: #ff5d5d;
+        --ok: #3cc76a;
+      }
+
+      html, body {
+        height: 100%;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        padding: 16px;
+      }
+
+      @media (max-width: 900px) {
+        .app { grid-template-columns: 1fr; }
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+      }
+
+      .panel-header h1 {
+        font-size: 16px;
+        margin: 0;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        align-items: center;
+      }
+
+      .controls input[type="file"] {
+        color: var(--text);
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: #1d222b;
+        color: var(--text);
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.05s ease, background 0.2s ease;
+      }
+      .btn:hover { background: #252b36; }
+      .btn:active { transform: scale(0.98); }
+      .btn.primary { border-color: #2f67ff55; background: #27419a; }
+
+      .section {
+        padding: 12px 14px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .input-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .input-help {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .bbox-input {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #0e1116;
+        min-height: 120px;
+        max-height: 40vh;
+        overflow: auto;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        white-space: pre-wrap;
+        outline: none;
+      }
+
+      .mode-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .radio {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 12px;
+        background: #12161c;
+      }
+      .chip .swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        border: 1px solid #0003;
+      }
+
+      .errors {
+        border-top: 1px dashed var(--border);
+        padding-top: 8px;
+        color: var(--error);
+        font-size: 13px;
+      }
+
+      .canvas-wrap {
+        position: relative;
+        display: grid;
+        place-items: center;
+        padding: 10px;
+      }
+      .img-stage {
+        position: relative;
+        width: 100%;
+        max-width: 960px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #0b0e12;
+        overflow: hidden;
+      }
+      .img-stage img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+      .img-stage canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        pointer-events: none;
+      }
+
+      .drop-tip {
+        color: var(--muted);
+        text-align: center;
+        font-size: 13px;
+      }
+
+      .kbd {
+        background: #0b0e12;
+        border: 1px solid var(--border);
+        border-bottom-width: 3px;
+        border-radius: 6px;
+        padding: 2px 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- 左侧：文本与控制 -->
+      <section class="panel">
+        <div class="panel-header">
+          <h1>边界框输入与解析</h1>
+          <div class="controls" style="margin-left:auto">
+            <input id="fileInput" type="file" accept="image/*" />
+            <button id="resetBtn" class="btn">重置</button>
+          </div>
+        </div>
+        <div class="section">
+          <div class="input-row">
+            <div id="bboxInput" class="bbox-input" contenteditable="true" spellcheck="false" aria-label="在此粘贴或输入bbox文本"></div>
+            <div class="input-help">
+              在此输入或粘贴包含边界框的文本，支持格式如
+              <span class="kbd">[12, 32, 455, 786]</span>。可使用
+              <span class="kbd">⌘+V</span> 直接粘贴剪贴板图片。
+            </div>
+          </div>
+
+          <div class="mode-row" role="radiogroup" aria-label="坐标格式">
+            <label class="radio"><input type="radio" name="mode" value="x1y1x2y2" checked /> x1,y1,x2,y2</label>
+            <label class="radio"><input type="radio" name="mode" value="xywh" /> x,y,width,height</label>
+            <label class="radio"><input type="radio" name="mode" value="x1y1x2y2_1000" /> x1,y1,x2,y2（按1000归一化）</label>
+            <span class="input-help">选择输入坐标格式；三种模式均支持小数与负数。归一化模式下输入范围通常在0–1000，会按图片尺寸缩放。</span>
+          </div>
+
+          <div id="chips" class="chips" aria-live="polite" aria-atomic="true"></div>
+
+          <div id="errors" class="errors" role="alert" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- 右侧：图片与可视化 -->
+      <section class="panel">
+        <div class="panel-header">
+          <h1>图片与BBox可视化</h1>
+          <div class="controls" style="margin-left:auto">
+            <button id="fitBtn" class="btn">适应宽度</button>
+            <button id="downloadBtn" class="btn">导出标注</button>
+          </div>
+        </div>
+        <div class="section">
+          <div class="canvas-wrap">
+            <div id="stage" class="img-stage" aria-label="图片展示区域，支持拖拽上传"></div>
+            <div class="drop-tip">拖拽图片到上方区域或使用文件选择；也可粘贴剪贴板图片。</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      // ========= 工具与状态 =========
+      const bboxRegex = /\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*]/g;
+
+      const state = {
+        img: null,               // HTMLImageElement
+        natural: { w: 0, h: 0 }, // 原始尺寸
+        mode: 'x1y1x2y2',
+        boxes: [],               // 解析后的 {raw, nums: [n1..n4], rect: {x,y,w,h}, color}
+        errors: [],
+      };
+
+      // 颜色生成：等间隔色相，提高可读性
+      function colorForIndex(i) {
+        const hue = (i * 137.508) % 360; // 黄金角度分布
+        return `hsl(${hue}, 70%, 60%)`;
+      }
+
+      // 简单防抖
+      function debounce(fn, ms = 120) {
+        let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+      }
+
+      // ========= DOM =========
+      const el = {
+        file: document.getElementById('fileInput'),
+        reset: document.getElementById('resetBtn'),
+        fit: document.getElementById('fitBtn'),
+        download: document.getElementById('downloadBtn'),
+        input: document.getElementById('bboxInput'),
+        chips: document.getElementById('chips'),
+        errors: document.getElementById('errors'),
+        stage: document.getElementById('stage'),
+      };
+
+      // 在舞台中创建 img 与 canvas
+      const img = new Image();
+      img.alt = '预览图片';
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      el.stage.appendChild(img);
+      el.stage.appendChild(canvas);
+
+      // ========= 解析与可视化 =========
+      function parseInputText(text) {
+        const boxes = []; let m; let index = 0;
+        bboxRegex.lastIndex = 0;
+        while ((m = bboxRegex.exec(text)) !== null) {
+          const nums = [1,2,3,4].map(i => parseFloat(m[i]));
+          const color = colorForIndex(index);
+          boxes.push({ raw: m[0], nums, color, start: m.index, end: m.index + m[0].length });
+          index++;
+        }
+        return boxes;
+      }
+
+      function rectFrom(nums, mode) {
+        if (mode === 'xywh') {
+          const [x, y, w, h] = nums; return { x, y, w, h };
+        } else if (mode === 'x1y1x2y2_1000') {
+          const [x1n, y1n, x2n, y2n] = nums;
+          const x1 = x1n * state.natural.w / 1000;
+          const y1 = y1n * state.natural.h / 1000;
+          const x2 = x2n * state.natural.w / 1000;
+          const y2 = y2n * state.natural.h / 1000;
+          return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+        } else {
+          const [x1, y1, x2, y2] = nums; return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+        }
+      }
+
+      function validateRect(rect) {
+        const errs = [];
+        if (!Number.isFinite(rect.x) || !Number.isFinite(rect.y) || !Number.isFinite(rect.w) || !Number.isFinite(rect.h)) {
+          errs.push('坐标包含非数字内容');
+        }
+        if (rect.w <= 0 || rect.h <= 0) {
+          errs.push('宽或高非正数');
+        }
+        return errs;
+      }
+
+      function draw() {
+        // 清空画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!state.img) return;
+        // 尺寸与缩放：canvas 始终与 img 当前显示尺寸一致
+        const displayW = img.clientWidth;
+        const displayH = img.clientHeight;
+        canvas.width = displayW; canvas.height = displayH;
+        const scaleX = displayW / state.natural.w;
+        const scaleY = displayH / state.natural.h;
+
+        // 绘制每个框
+        state.boxes.forEach((b, i) => {
+          const r = b.rect;
+          const x = r.x * scaleX;
+          const y = r.y * scaleY;
+          const w = r.w * scaleX;
+          const h = r.h * scaleY;
+          // 背景半透明填充以增强可读性
+          ctx.fillStyle = b.color.replace('60%', '80%').replace('70%', '40%');
+          ctx.globalAlpha = 0.12;
+          ctx.fillRect(x, y, w, h);
+          ctx.globalAlpha = 1;
+          // 边框
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = b.color;
+          ctx.strokeRect(x, y, w, h);
+          // 标签
+          const label = `#${i+1}`;
+          ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas';
+          ctx.fillStyle = '#0b0e12';
+          ctx.fillRect(x, Math.max(0, y - 16), ctx.measureText(label).width + 8, 16);
+          ctx.fillStyle = b.color;
+          ctx.fillText(label, x + 4, Math.max(12, y - 4));
+        });
+      }
+
+      function colorizeInput(text, boxes) {
+        if (!text) return '';
+        if (boxes.length === 0) return escapeHTML(text);
+        let html = '';
+        let cursor = 0;
+        for (const b of boxes) {
+          html += escapeHTML(text.slice(cursor, b.start));
+          html += `<span style="color:${b.color}">${escapeHTML(text.slice(b.start, b.end))}</span>`;
+          cursor = b.end;
+        }
+        html += escapeHTML(text.slice(cursor));
+        return html;
+      }
+
+      function escapeHTML(s) {
+        return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+      }
+
+      function updateChips() {
+        const frag = document.createDocumentFragment();
+        state.boxes.forEach((b, i) => {
+          const d = document.createElement('div'); d.className = 'chip';
+          const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = b.color; d.appendChild(sw);
+          d.appendChild(document.createTextNode(`#${i+1} ${b.raw}`));
+          frag.appendChild(d);
+        });
+        el.chips.innerHTML = ''; el.chips.appendChild(frag);
+      }
+
+      function updateErrors() {
+        if (!state.errors.length) { el.errors.textContent = ''; return; }
+        el.errors.innerHTML = state.errors.map(e => `• ${escapeHTML(e)}`).join('<br>');
+      }
+
+      const update = debounce(() => {
+        const text = el.input.innerText || '';
+        state.errors = [];
+        const parsed = parseInputText(text);
+
+        const needsImage = state.mode === 'x1y1x2y2_1000';
+        const hasImage = !!state.img && state.natural.w > 0 && state.natural.h > 0;
+        if (needsImage && !hasImage && parsed.length) {
+          state.errors.push('归一化坐标模式需要先加载图片以获取宽高');
+        }
+
+        const boxes = parsed.map(b => ({ ...b, rect: rectFrom(b.nums, state.mode) }));
+        const valid = [];
+        if (!(needsImage && !hasImage)) {
+          boxes.forEach((b, i) => {
+            const errs = validateRect(b.rect);
+            if (errs.length) {
+              state.errors.push(`第${i+1}个框 ${b.raw} 无效：${errs.join('，')}`);
+            } else {
+              valid.push(b);
+            }
+          });
+        }
+        state.boxes = (needsImage && !hasImage)
+          ? boxes.map((b, i) => ({ ...b, color: colorForIndex(i) }))
+          : valid.map((b, i) => ({ ...b, color: colorForIndex(i) }));
+
+        const colored = colorizeInput(text, state.boxes);
+        el.input.innerHTML = colored || '';
+        placeCaretAtEnd(el.input);
+
+        updateChips();
+        updateErrors();
+        draw();
+      }, 80);
+
+      function placeCaretAtEnd(elm) {
+        elm.focus();
+        const range = document.createRange();
+        range.selectNodeContents(elm);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+
+      // ========= 图片加载与交互 =========
+      function setImageSrc(src) {
+        return new Promise((resolve, reject) => {
+          img.onload = () => {
+            state.img = img;
+            state.natural.w = img.naturalWidth; state.natural.h = img.naturalHeight;
+            // 初始设置 canvas 尺寸匹配当前显示尺寸
+            canvas.style.width = img.clientWidth + 'px';
+            canvas.style.height = img.clientHeight + 'px';
+            update();
+            resolve();
+          };
+          img.onerror = () => reject(new Error('图片加载失败，请检查文件或链接'));
+          img.src = src;
+        });
+      }
+
+      function handleFiles(files) {
+        if (!files || !files.length) return;
+        const file = files[0];
+        if (!file.type.startsWith('image/')) {
+          state.errors = ['请选择图片文件（支持常见格式）']; updateErrors(); return;
+        }
+        const url = URL.createObjectURL(file);
+        setImageSrc(url).catch(err => { state.errors = [err.message]; updateErrors(); });
+      }
+
+      // 拖拽上传
+      el.stage.addEventListener('dragover', e => { e.preventDefault(); });
+      el.stage.addEventListener('drop', e => {
+        e.preventDefault(); handleFiles(e.dataTransfer.files);
+      });
+
+      // 文件选择
+      el.file.addEventListener('change', e => handleFiles(e.target.files));
+
+      // 粘贴图片（全局）：如剪贴板含图片则加载到舞台，并阻止默认插入
+      document.addEventListener('paste', e => {
+        const items = Array.from(e.clipboardData.items);
+        const imgItem = items.find(i => i.type.startsWith('image/'));
+        if (imgItem) {
+          e.preventDefault();
+          const file = imgItem.getAsFile();
+          const url = URL.createObjectURL(file);
+          setImageSrc(url).catch(err => { state.errors = [err.message]; updateErrors(); });
+        }
+      });
+
+      // 输入框内粘贴纯文本：防止与默认行为重复插入
+      el.input.addEventListener('paste', e => {
+        const items = Array.from(e.clipboardData.items);
+        if (items.some(i => i.type.startsWith('image/'))) return;
+        e.preventDefault();
+        const s = e.clipboardData.getData('text/plain');
+        el.input.innerText += s;
+        update();
+      });
+
+      // 模式切换
+      document.querySelectorAll('input[name="mode"]').forEach(r => {
+        r.addEventListener('change', () => { state.mode = r.value; update(); });
+      });
+
+      // 输入事件
+      el.input.addEventListener('input', update);
+
+      // 重置
+      el.reset.addEventListener('click', () => {
+        el.input.innerText = '';
+        el.chips.innerHTML = '';
+        el.errors.innerHTML = '';
+        state.boxes = []; state.errors = [];
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+
+      // 适应宽度（滚动到顶部并刷新绘制）
+      el.fit.addEventListener('click', () => { draw(); });
+
+      // 导出当前标注为 PNG（包含可视化）
+      el.download.addEventListener('click', () => {
+        if (!state.img) { state.errors = ['请先加载图片']; updateErrors(); return; }
+        // 合成：创建一个离屏 canvas，将图片与标注一并绘制
+        const off = document.createElement('canvas');
+        off.width = state.natural.w; off.height = state.natural.h;
+        const octx = off.getContext('2d');
+        octx.drawImage(state.img, 0, 0);
+        state.boxes.forEach((b, i) => {
+          const r = b.rect;
+          octx.fillStyle = b.color.replace('60%', '80%').replace('70%', '40%');
+          octx.globalAlpha = 0.12; octx.fillRect(r.x, r.y, r.w, r.h); octx.globalAlpha = 1;
+          octx.lineWidth = 2; octx.strokeStyle = b.color; octx.strokeRect(r.x, r.y, r.w, r.h);
+          const label = `#${i+1}`; octx.font = '14px ui-monospace';
+          octx.fillStyle = '#0b0e12'; octx.fillRect(r.x, Math.max(0, r.y - 18), octx.measureText(label).width + 8, 18);
+          octx.fillStyle = b.color; octx.fillText(label, r.x + 4, Math.max(14, r.y - 4));
+        });
+        const a = document.createElement('a'); a.download = 'annotated.png'; a.href = off.toDataURL('image/png'); a.click();
+      });
+
+      // 初始示例文本，便于测试
+      const example = `示例：\n图一 [12, 24, 220, 180]\n图二 [300, 150, 120, 90] \n其它文本也可出现 [5, 5, 100, 60] 混合内容。`;
+      el.input.innerText = example;
+      update();
+
+      // 窗口尺寸变化时重绘
+      window.addEventListener('resize', debounce(draw, 50));
+    </script>
+  </body>
+</html>

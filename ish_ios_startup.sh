@@ -27,11 +27,11 @@ update_progress() {
   printf "\r[%-${bar_width}s] %3d%%  第 %d/%d 步：%s" "$bar" "$percent" "$current_step" "$total_steps" "$current_desc"
 }
 
-printf "开始安装与配置 (iSH iOS / Alpine + OpenRC + SSH)...\n"
+printf "开始安装与配置 (iSH iOS / Alpine + OpenRC + SSH + git + Zsh + Oh My Zsh)...\n"
 
 # 1) 安装基础包
 current_desc="安装apk包"
-apk add openssh curl openrc python3 nano zsh
+apk add openssh curl openrc python3 nano zsh git
 current_step=$((current_step + 1))
 update_progress
 
@@ -163,7 +163,7 @@ update_progress
 
 # 17) 修改 zsh 为默认 shell
 current_desc="修改 zsh 为默认 shell"
-chsh -s /bin/zsh
+sed -i.bak '/^root:/s/\/bin\/.*/\/bin\/zsh/' /etc/passwd
 current_step=$((current_step + 1))
 update_progress
 
@@ -183,3 +183,5 @@ update_progress
 zsh
 printf "\n全部步骤完成！现在可通过端口 22022 进行 SSH 登录。socks5 代理端口为 8809\n"
 ## wget -qO- https://strike20023.github.io/ish_ios_startup.sh | sh
+
+# wget -qO- http://10.66.39.51:9990/ish_ios_startup.sh | sh
