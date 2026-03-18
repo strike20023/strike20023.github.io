@@ -21,14 +21,12 @@ if ($request.url.indexOf("getInterval") !== -1) {
         const success = $persistentStore.write(JSON.stringify(savedHeaders), "gym_headers");
         
         if (success) {
-            $notification.post("Gym Check", "Cookie Updated", "Successfully captured and saved new session headers.");
-            console.log("Gym Check: Headers saved: " + JSON.stringify(savedHeaders));
+            $notification.post("北邮健身房", "小饼干更新成功", "已成功抓取并保存新的请求头");
         } else {
-            $notification.post("Gym Check", "Error", "Failed to save headers.");
-            console.log("Gym Check: Failed to save headers.");
+            $notification.post("北邮健身房", "保存失败", "无法保存请求头信息");
         }
     } else {
-        console.log("Gym Check: No cookie found in request headers.");
+        $notification.post("北邮健身房", "获取失败", "在请求头中未找到小饼干");
     }
 }
 

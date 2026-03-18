@@ -10,8 +10,7 @@ function checkGym() {
     const savedData = $persistentStore.read("gym_headers");
     
     if (!savedData) {
-        $notification.post("Gym Check", "Error", "No saved headers found. Please visit the gym page to capture headers.");
-        console.log("Gym Check: No saved headers found.");
+        $notification.post("北邮健身房", "配置缺失", "未找到保存的请求头，请先访问健身房页面");
         $done();
         return;
     }
@@ -20,8 +19,7 @@ function checkGym() {
     try {
         headers = JSON.parse(savedData);
     } catch (e) {
-        $notification.post("Gym Check", "Error", "Failed to parse saved headers.");
-        console.log("Gym Check: Failed to parse saved headers: " + e.message);
+        $notification.post("北邮健身房", "解析失败", "无法读取保存的请求头信息");
         $done();
         return;
     }
@@ -37,8 +35,7 @@ function checkGym() {
 
     $httpClient.post(request, function(error, response, data) {
         if (error) {
-            $notification.post("Gym Check", "Network Error", error);
-            console.log("Gym Check: Network Error: " + error);
+            $notification.post("北邮健身房", "网络错误", "请求失败，请检查网络连接");
             $done();
             return;
         }
@@ -47,20 +44,35 @@ function checkGym() {
             const result = JSON.parse(data);
             
             if (result.status === 0 && result.info === "登录信息失效,请退出重新登录") {
-                $notification.post("Gym Check", "Session Expired", "Please visit the gym page again to update your session.");
-                console.log("Gym Check: Session expired.");
+                $notification.post("北邮健身房", "登录失效", "请重新访问健身房页面更新登录状态");
             } else if (result.status === 1 && result.info === "查询成功") {
-                // You can add more detailed checks here, e.g., checking available slots in result.data.interval
-                $notification.post("Gym Check", "Success", "Gym status checked successfully.");
-                console.log("Gym Check: Request successful.");
+                let availableSlots = [];
+                if (result.data && result.data.interval && result.data.interval.length > 0) {
+                    result.data.interval.forEach(day => {
+                        if (day.list && day.list.length > 0) {
+                            day.list.forEach(slotArray => {
+                                slotArray.forEach(slot => {
+                                    if (slot.is_lock == 1 && slot.max > slot.selected) {
+                                        availableSlots.push(`${slot.date} ${slot.interval_time}`);
+                                    }
+                                });
+                            });
+                        }
+                    });
+                }
+
+                if (availableSlots.length > 0) {
+                    let msg = availableSlots.slice(0, 5).join('\n');
+                    if (availableSlots.length > 5) {
+                        msg += `\n...等共 ${availableSlots.length} 个时段`;
+                    }
+                    $notification.post("🏋️ 健身房有空位！", "发现可预约时段", msg);
+                }
             } else {
-                $notification.post("Gym Check", "Unknown Response", "Received unexpected response: " + result.info);
-                console.log("Gym Check: Unexpected response: " + JSON.stringify(result));
+                $notification.post("北邮健身房", "小饼干失效", JSON.stringify(result));
             }
         } catch (e) {
-            $notification.post("Gym Check", "Parse Error", "Failed to parse response data.");
-            console.log("Gym Check: Failed to parse response data: " + e.message);
-            console.log("Gym Check: Raw response: " + data);
+            $notification.post("北邮健身房", "数据错误", "服务器返回的数据格式不正确");
         }
         
         $done();
