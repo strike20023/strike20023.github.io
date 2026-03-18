@@ -52,8 +52,8 @@ function checkGym() {
                         if (day.list && day.list.length > 0) {
                             day.list.forEach(slotArray => {
                                 slotArray.forEach(slot => {
-                                    if (slot.is_lock == 1 && slot.max > slot.selected) {
-                                        availableSlots.push(`${slot.date} ${slot.interval_time}`);
+                                    if (slot.is_lock == 1 && slot.is_open == 1 && slot.max > slot.selected) {
+                                        availableSlots.push(`日期：${slot.date.slice(5)} 时间：${slot.interval_time} 剩余：${slot.max - slot.selected}`);
                                     }
                                 });
                             });
