@@ -21,7 +21,7 @@ if ($request.url.indexOf("getInterval") !== -1) {
         const success = $persistentStore.write(JSON.stringify(savedHeaders), "gym_headers");
         
         if (success) {
-            $notification.post("北邮健身房", "小饼干更新成功", "已成功抓取并保存新的请求头");
+            $notification.post("北邮健身房", "小饼干更新成功", "已成功抓取并保存新的请求头", {"auto-dismiss": 10});
         } else {
             $notification.post("北邮健身房", "保存失败", "无法保存请求头信息");
         }
