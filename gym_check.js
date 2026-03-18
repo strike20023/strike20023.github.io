@@ -66,7 +66,7 @@ function checkGym() {
                     if (availableSlots.length > 5) {
                         msg += `\n...等共 ${availableSlots.length} 个时段`;
                     }
-                    $notification.post("🏋️ 健身房有空位！", "发现可预约时段", msg);
+                    $notification.post("🏋️ 健身房有空位！", "发现可预约时段", msg, {"auto-dismiss": 10});
                 }
             } else {
                 $notification.post("北邮健身房", "小饼干失效", JSON.stringify(result));
