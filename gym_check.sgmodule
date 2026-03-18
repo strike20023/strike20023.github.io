@@ -1,6 +1,5 @@
 #!name=Gym Check
 #!desc=自动抓取北邮健身房空位，查询 Cookie 并定时检查状态。
-#!system=iOS
 
 [Script]
 # 获取 Cookie 的脚本
