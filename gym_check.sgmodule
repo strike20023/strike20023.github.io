@@ -1,14 +1,13 @@
 #!name=Gym Check
-#!desc=自动抓取健身房查询 Cookie 并定时检查状态。
-#!system=mac
-#!category=Local
+#!desc=自动抓取北邮健身房空位，查询 Cookie 并定时检查状态。
+#!system=iOS
 
 [Script]
 # 获取 Cookie 的脚本
-Gym_Cookie = type=http-request, pattern=^https://byty.bupt.edu.cn/bdlp_h5_fitness_test/public/index.php/index/Stadium/getInterval, script-path=https://strike20023.github.io/get_gym_cookie.js, requires-body=true
+Gym_Cookie = type=http-request, pattern=^https://byty.bupt.edu.cn/bdlp_h5_fitness_test/public/index.php/index/Stadium/getInterval, script-path=https://strike20023.github.io/get_gym_cookie.js
 
-# 定时检查脚本 (每10分钟)
-Gym_Check = type=cron, cronexp="*/10 * * * *", script-path=https://strike20023.github.io/check_gym.js
+# 定时检查健身房空位脚本 (每3分钟)
+Gym_Check = type=cron, cronexp="*/3 * * * *", script-path=https://strike20023.github.io/check_gym.js
 
 [MITM]
 hostname = %APPEND% byty.bupt.edu.cn
