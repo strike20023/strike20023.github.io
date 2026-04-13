@@ -1,17 +1,24 @@
-# 脚本小子
+# strike20023.github.io
 
-这个仓库通过 GitHub Pages 托管自用脚本、规则配置和公开静态文件。
+这个仓库通过 GitHub Pages 托管个人主页、自用脚本、规则配置和公开静态文件。
 
 ## 目录结构
 
-当前只保留两个主要目录：
+当前主要目录：
 
+- `homepage/`：个人主页静态页面。
 - `files/`：公开静态文件和配置文件，例如规则、公钥、图标。
 - `scripts/`：可直接远程引用或执行的脚本、模块、用户脚本。
 
 根目录只放仓库说明和配置文件，例如 `README.md`、`.gitignore`。
 
 ## 公开地址
+
+### homepage
+
+| 用途 | 地址 |
+| --- | --- |
+| 个人主页 | `https://strike20023.github.io/homepage/` |
 
 ### files
 
@@ -50,6 +57,7 @@ bash <(curl -fsSL https://strike20023.github.io/scripts/create_a_wechat_clone.sh
 
 ## 维护约定
 
+- 个人主页相关文件放进 `homepage/`。
 - 静态资源、规则、公钥放进 `files/`。
 - 脚本、模块、用户脚本放进 `scripts/`。
 - 新增公开文件后，同步在本 README 的「公开地址」中登记。
