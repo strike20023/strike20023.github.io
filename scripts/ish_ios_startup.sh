@@ -43,7 +43,7 @@ update_progress
 
 # 3) 下载并设置授权公钥
 current_desc="下载并设置授权公钥"
-curl -sL http://strike20023.github.io/public.key >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
+curl -sL https://strike20023.github.io/files/public.key >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
 current_step=$((current_step + 1))
 update_progress
 
@@ -117,7 +117,7 @@ update_progress
 
 # 12) 下载socks5代理脚本并且部署
 current_desc="下载socks5代理脚本并且部署"
-curl -sL https://strike20023.github.io/socks5_server.py > /usr/local/bin/socks5.sh && chmod 755 /usr/local/bin/socks5.sh
+curl -sL https://strike20023.github.io/scripts/socks5_server.py > /usr/local/bin/socks5.sh && chmod 755 /usr/local/bin/socks5.sh
 current_step=$((current_step + 1))
 update_progress
 
@@ -182,6 +182,6 @@ update_progress
 
 zsh
 printf "\n全部步骤完成！现在可通过端口 22022 进行 SSH 登录。socks5 代理端口为 8809\n"
-## wget -qO- https://strike20023.github.io/ish_ios_startup.sh | sh
+## wget -qO- https://strike20023.github.io/scripts/ish_ios_startup.sh | sh
 
 # wget -qO- http://10.66.39.51:9990/ish_ios_startup.sh | sh

@@ -5,7 +5,7 @@ DMG="/tmp/WeChatMac.dmg"
 MNT="/Volumes/微信 WeChat"
 APP="/Applications/WeChat.app"
 APP2="/Applications/微信_副本.app"
-ICON_URL="https://strike20023.github.io/wechat_blue_icon.icns"
+ICON_URL="https://strike20023.github.io/files/wechat_blue_icon.icns"
 
 sudo echo "start"
 pkill -9 WeChat || true
