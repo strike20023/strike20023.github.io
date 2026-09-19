@@ -1,0 +1,5 @@
+#!name=Hermex Private HTTPS
+#!desc=Resolve only the Hermes service to the home Mac mini. Keep the existing WireGuard route for 10.0.0.111 enabled. No MITM or URL rewrite is used.
+
+[Host]
+hermes.strike20023.top = 10.0.0.111

@@ -33,6 +33,7 @@
 
 | 用途 | 地址 |
 | --- | --- |
+| Hermex 私有 HTTPS Surge 模块 | `https://strike20023.github.io/scripts/hermex_private_https.sgmodule` |
 | 健身房 Surge 模块 | `https://strike20023.github.io/scripts/gym_check.sgmodule` |
 | 健身房空位检查脚本 | `https://strike20023.github.io/scripts/gym_check.js` |
 | 健身房 Cookie 抓取脚本 | `https://strike20023.github.io/scripts/gym_get_cookie.js` |
