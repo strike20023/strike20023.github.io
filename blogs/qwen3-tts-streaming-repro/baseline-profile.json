@@ -1,0 +1,17 @@
+{
+  "description": "Single synchronized component profile before graph optimization; instrumented wall times, not a CUDA kernel trace or distribution.",
+  "total_s": 8.356592396274209,
+  "audio_s": 6.64,
+  "parts": {
+    "residual_predictor": {
+      "count": 83,
+      "sum_s": 5.68122399225831,
+      "median_ms": 68.30199435353279
+    },
+    "codec_decode": {
+      "count": 25,
+      "sum_s": 0.7716622333973646,
+      "median_ms": 22.45340682566166
+    }
+  }
+}

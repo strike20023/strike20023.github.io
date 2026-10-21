@@ -185,3 +185,7 @@ The supplied code is derived from the measured implementation; the core `streami
 The published Python source was copied into a separate directory and started as an isolated server using the original installed Python environment. Five queue tests and all startup graph checks passed. Fixed-text generation took 2.778s, with first non-silent PCM at 199ms; a five-second withheld-text trial returned first non-silent PCM at 217ms. See [validation-result.json](validation-result.json). This validates source integration in the observed runtime, **not** a fresh installation of the dependency inventory.
 
 The withheld-text prefix was independently transcribed as “我。” and the complete waveform as “我喜欢读书，也喜欢听音乐。” with Qwen3-ASR-1.7B.
+
+### Reproduce the component profile
+
+Stop the serving process first, use the same model and CUDA device environment, and run `python profile_stream.py`. This loads a separate **unaccelerated** model, synchronizes CUDA around residual-predictor and waveform-decoder calls, and writes `outputs/profile-strict/*.json`. The third trial deliberately withholds subsequent text. Compare warmed fixed-text trials, not the hold trial. [baseline-profile.json](baseline-profile.json) is the summarized original measurement used for the article's bottleneck discussion. Synchronization perturbs execution; this is region timing, not a GPU kernel timeline.
