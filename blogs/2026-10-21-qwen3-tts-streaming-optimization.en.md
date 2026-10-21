@@ -8,6 +8,82 @@ In one before-and-after browser comparison using the same question and identical
 
 This is a deployment case study, not a model leaderboard. We did not achieve sub-100ms onset, nor establish that arbitrary text and arrival patterns will always be read without omissions.
 
+## Runnable code, frameworks, and exact versions
+
+A [reproduction directory](qwen3-tts-streaming-repro/README.md) now includes the complete adapter, CUDA Graph implementation, FastAPI service, browser UI, and benchmark clients. Start with the standalone `/ws` text-to-speech test, then connect an LLM through `/chat`.
+
+| Layer | Implementation and observed version |
+| --- | --- |
+| OS / GPU | Ubuntu 22.04.1, RTX 4090 D 24GB, NVIDIA driver 580.126.20 |
+| Python | CPython 3.11.12 |
+| Tensor runtime | PyTorch 2.14.1, compiled CUDA 13.0, cuDNN 9.24 |
+| TTS package | qwen-tts 0.1.1 |
+| Generation | Transformers 4.57.3, accelerate 1.12.0, tokenizers 0.22.2 |
+| Serving | FastAPI 0.151.0, Uvicorn 0.54.0, one worker |
+| Transport clients | HTTPX 0.28.1, websockets 17.3 |
+| Arrays / audio files | NumPy 2.4.6, soundfile 0.14.0 |
+
+The TTS acceleration path uses native PyTorch and Transformers: **no vLLM, SGLang, TensorRT, `torch.compile`, quantization, or new training**. Attention uses SDPA. Graphs accelerate the residual predictor and waveform decoder; the Talker backbone retains ordinary generation. The frontend is plain JavaScript without a build step.
+
+The [full dependency inventory](qwen3-tts-streaming-repro/requirements-observed.txt) records the installed environment, not a freshly resolved lockfile. In particular, torchaudio was 2.11.0 while torch was 2.14.1; these observed versions are not a recommended ABI compatibility pair. A fresh installation of the entire inventory has not been validated, and the kit does not guarantee bitwise-identical environments or waveforms. The model revision was recovered from all 13 cached download metadata records, including both weight files: `85e237c12c027371202489a0ec509ded67b5e4b5`. The commands below pin it.
+
+### Run the experiment in stages
+
+```bash
+git clone https://github.com/strike20023/strike20023.github.io.git
+cd strike20023.github.io/blogs/qwen3-tts-streaming-repro
+uv venv --python 3.11.12 .venv
+source .venv/bin/activate
+uv pip install -r requirements-observed.txt
+
+hf download Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice \
+  --revision 85e237c12c027371202489a0ec509ded67b5e4b5 \
+  --local-dir ./models/Qwen3-TTS-12Hz-0.6B-CustomVoice
+export MODEL="$PWD/models/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+export CUDA_VISIBLE_DEVICES=0
+python -m unittest test_queue -v
+FAST_INFERENCE=1 TRIM_LEADING_SILENCE=1 bash run.sh
+```
+
+If dependency resolution fails, consult the kit's explanation of the installed inventory, `--no-deps`, and supported torch/torchaudio pairs. Do not silently upgrade inference dependencies and label the result an exact reproduction. Do not remove startup assertions to bypass incompatibility.
+
+In a second terminal with the same environment and directory:
+
+```bash
+# Isolate TTS from the LLM; save full WAV files and timestamped JSON events.
+python bench.py --mode full --runs 3 --seed 42 --chunk-frames 4 \
+  --text '你好，欢迎测试。今天我们测试首字朗读和持续音频生成的速度。' \
+  --output outputs/fast-fixed
+
+# Supply only “我”, then withhold the remainder for five seconds.
+python bench.py --mode hold --delay 5 --seed 44 \
+  --text '我喜欢读书，也喜欢听音乐。' --output outputs/hold
+python check_prefix.py outputs/hold
+```
+
+Use a separate process for the baseline: stop the server, start `FAST_INFERENCE=0 bash run.sh`, and repeat the benchmark into another output directory. Discard unwarmed runs. This baseline disables both graph acceleration and prefix trimming; add a third run with `FAST_INFERENCE=1 TRIM_LEADING_SILENCE=0` to separate computational gains from silence removal.
+
+For the LLM integration, set `LLM_URL` to the complete OpenAI-compatible chat-completions URL and `LLM_MODEL` to the served model name before starting the server. Supply authentication through `LLM_API_KEY` if needed. Open `http://127.0.0.1:8092/`. A different LLM reproduces the interface, not the original LLM latency. Remove `chat_template_kwargs` if your endpoint rejects this model-specific extension. ASR is not bundled; supply your own prefix/full-waveform transcription. The original evaluation used Qwen3-ASR-1.7B.
+
+### Function-level implementation details
+
+**Text adaptation.** [`install_adapter()`](qwen3-tts-streaming-repro/streaming.py) obtains the installed Talker `forward` with `inspect.getsource`, asserts a known text-embedding source anchor, inserts queue consumption, and binds the resulting method to the instance. It does not edit site-packages. This is intentionally source-version-sensitive. Codec EOS is masked until the current segment has received text EOS; pending token pieces, unconsumed text, and the request-end marker are separate states.
+
+**Residual buffers and positions.** [`install_mtp()`](qwen3-tts-streaming-repro/fast_inference.py) uses static input shape `[1, 2, talker_hidden_size]`. Initial positions are `[0,1]`; subsequent residual step `i` uses `[i+1]` and `generation_steps=i`. `DynamicCache` belongs to the residual sequence within one audio frame, not an indefinitely growing cache across audio frames. Greedy and sampled graphs are captured separately. Sampling performs temperature scaling, top-k filtering, softmax, and multinomial selection on the GPU. The replay result is cloned so the next replay cannot overwrite a result still in use.
+
+**Capture and execution.** The code warms on a separate CUDA stream, synchronizes with the current stream, then captures. A graph references fixed buffers and is not a stateless function. The service consequently enforces a single session and one Uvicorn worker. Multiple inference threads sharing these buffers can overwrite one another's inputs and outputs; this implementation cannot be used unchanged for concurrent throughput benchmarks.
+
+**Decoding and counters.** Codes are shaped `[1, num_quantizers, frames]`. The smallest fitting bucket is zeroed, populated with actual frames, and replayed. `samples_sent` counts model samples before leading-silence removal; emitted PCM may contain fewer samples. Mixing these counters shifts subsequent waveform slices and can cause missing or repeated audio.
+
+**Threads and the event loop.** [`web_chat.py`](qwen3-tts-streaming-repro/web_chat.py) uses HTTPX for asynchronous SSE ingestion and a separate Python thread for GPU inference. `loop.call_soon_threadsafe` transfers inference events to an asyncio queue. This lets text arrival, computation, and delivery overlap; it does not run multiple TTS sessions concurrently.
+
+### Expected validation output
+
+Startup should print `MTP: 32 real Talker inputs matched upstream greedy` and codec comparison logs before accepting requests. The fixed-text benchmark should produce `full-*.wav/json`; the strict-prefix test should produce `hold-0-prefix.wav` containing a recognizable “我”. Neither a successful health check nor a nonempty WAV proves that synthesis is correct.
+
+`bench.py` summary timing begins at `request_start`, after opening the WebSocket. Its playback simulation starts at the first PCM packet and omits the browser's 12ms scheduling margin and physical output latency. Do not treat its simulated onset and the browser display as identical metrics.
+
+
 ## Pipeline and environment
 
 The experiment uses `Qwen3-TTS-12Hz-0.6B-CustomVoice`, available from the [official Qwen3-TTS repository](https://github.com/QwenLM/Qwen3-TTS). We kept the model and optimized inference and delivery. We did not train a new model or replace it with a Qwen-Omni Talker.
@@ -189,4 +265,6 @@ The next checks should cover a wider range of initial phonemes and languages, fu
 
 The useful method is to separate packet arrival from audible onset, separate LLM latency from TTS computation, withhold future text to test input streaming, and inspect complete audio before deploying. **This experiment reached audible onset in hundreds of milliseconds; it did not demonstrate sub-100ms end-to-end voice interaction.**
 
-*Data note: measurements come from the single-session experiments on October 21, 2026. This public article includes methods and results, but not internal service addresses, session logs, model weights, or the complete deployment source. Code snippets explain the approach; they are not a turnkey reproduction package.*
+*Data note: measurements come from the single-session experiments on October 21, 2026. The article and reproduction directory include serving and benchmark source, but not internal addresses, session logs, or model weights. A fresh installation of the full dependency inventory has not been validated; see the reproduction notes for scope.*
+
+Independent-process check of the public snapshot: fixed-text generation 2.778s, first non-silent PCM 199ms; withheld-text trial first non-silent PCM 217ms, prefix ASR “我”, full transcript aligned. This reused the original installed environment, not a fresh dependency installation. See [machine-readable results](qwen3-tts-streaming-repro/validation-result.json).

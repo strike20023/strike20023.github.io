@@ -8,6 +8,82 @@ LLM 的文字已经快速刷出来，声音却迟迟没有开始——这是把�
 
 这是一份实际部署的工程记录，不是模型排行榜。我们没有达到低于 100ms 的起音，也没有证明任意文本、任意网络节奏下都不会漏读。
 
+## 可运行代码、框架和精确版本
+
+现在提供[复现实验目录](qwen3-tts-streaming-repro/README.md)，包含完整的推理适配器、CUDA Graph 实现、FastAPI 服务、浏览器页面和基准客户端；不再只有伪代码。可先不接 LLM，仅用 `/ws` 跑固定文本，再接 `/chat` 测端到端。
+
+| 层 | 实际实现与版本 |
+| --- | --- |
+| 操作系统与 GPU | Ubuntu 22.04.1、RTX 4090 D 24GB、NVIDIA driver 580.126.20 |
+| Python | CPython 3.11.12 |
+| 张量计算 | PyTorch 2.14.1，编译 CUDA 13.0，cuDNN 9.24 |
+| TTS 包 | qwen-tts 0.1.1 |
+| 生成框架 | Transformers 4.57.3、accelerate 1.12.0、tokenizers 0.22.2 |
+| HTTP / WebSocket 服务 | FastAPI 0.151.0、Uvicorn 0.54.0，单 worker |
+| 客户端传输 | HTTPX 0.28.1、websockets 17.3 |
+| 数值与音频文件 | NumPy 2.4.6、soundfile 0.14.0 |
+
+TTS 路径使用原生 PyTorch 和 Transformers，**没有使用 vLLM、SGLang、TensorRT、`torch.compile`、量化或新训练**。注意力实现是 SDPA；CUDA Graph 加速的是残差预测器和波形 decoder，Talker 主干仍走普通生成路径。Web 前端是原生 JavaScript，没有构建步骤。
+
+[完整依赖快照](qwen3-tts-streaming-repro/requirements-observed.txt)来自已运行环境，而不是重新求解的 lockfile。特别是环境里的 torchaudio 为 2.11.0，与 torch 版本不一致；不能据此推断这是一组推荐的二进制兼容版本。完整快照的全新环境安装尚未验证，已从下载缓存的13份元数据（含两个权重文件）核对模型 revision 为 `85e237c12c027371202489a0ec509ded67b5e4b5`。下面命令固定该版本，但仍不承诺跨环境逐 bit 相同的声音。
+
+### 快速复现顺序
+
+```bash
+git clone https://github.com/strike20023/strike20023.github.io.git
+cd strike20023.github.io/blogs/qwen3-tts-streaming-repro
+uv venv --python 3.11.12 .venv
+source .venv/bin/activate
+uv pip install -r requirements-observed.txt
+
+hf download Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice \
+  --revision 85e237c12c027371202489a0ec509ded67b5e4b5 \
+  --local-dir ./models/Qwen3-TTS-12Hz-0.6B-CustomVoice
+export MODEL="$PWD/models/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+export CUDA_VISIBLE_DEVICES=0
+python -m unittest test_queue -v
+FAST_INFERENCE=1 TRIM_LEADING_SILENCE=1 bash run.sh
+```
+
+如果依赖求解失败，见复现目录中对已安装快照、`--no-deps` 和匹配 torch/torchaudio 版本的说明；不要静默升级后仍把结果标成原环境复现。服务启动自检不通过时，也不要删除断言继续跑。
+
+另开终端，在相同环境、相同目录运行：
+
+```bash
+# 不经过 LLM，先隔离 TTS；输出完整 WAV 和逐事件 JSON。
+python bench.py --mode full --runs 3 --seed 42 --chunk-frames 4 \
+  --text '你好，欢迎测试。今天我们测试首字朗读和持续音频生成的速度。' \
+  --output outputs/fast-fixed
+
+# 只先发“我”，五秒后才发后文。
+python bench.py --mode hold --delay 5 --seed 44 \
+  --text '我喜欢读书，也喜欢听音乐。' --output outputs/hold
+python check_prefix.py outputs/hold
+```
+
+对照必须分进程：停止服务后以 `FAST_INFERENCE=0 bash run.sh` 启动，再跑同一组命令、写入新的输出目录。丢弃未预热的测量轮。该 baseline 同时关闭 graph 和开头静音裁剪；增加 `FAST_INFERENCE=1 TRIM_LEADING_SILENCE=0` 的第三组，才能进一步分离计算加速和静音裁剪的收益。
+
+接 LLM 时，在启动服务前设置 `LLM_URL` 为完整的 OpenAI 兼容 chat-completions URL、`LLM_MODEL` 为服务中的模型名，需要鉴权时通过 `LLM_API_KEY` 环境变量传入。页面位于 `http://127.0.0.1:8092/`。不同 LLM 能复现连接方式，但不能复现本文的 LLM 延迟。若服务不接受 `chat_template_kwargs`，应移除这个模型专用参数。复现包不包含 ASR 服务；首字和全文的 ASR 需另外提供，原评估使用 Qwen3-ASR-1.7B。
+
+### 从函数看实现细节
+
+**输入适配：** [`install_adapter()`](qwen3-tts-streaming-repro/streaming.py) 通过 `inspect.getsource` 获取当前安装包的 Talker `forward`，在已断言存在的文本 embedding 分支插入队列消费逻辑，再把新方法绑定到模型实例；没有修改 site-packages。这个方法依赖确切源码结构，升级 qwen-tts/Transformers 后需要重新核查。尚未给当前段提供文本 EOS 时屏蔽 codec EOS，避免模型在已知文字未消费完时结束；`pending`、未读字符串和队列终止标记必须分开处理。
+
+**MTP 缓冲与位置：** [`install_mtp()`](qwen3-tts-streaming-repro/fast_inference.py) 的静态输入形状为 `[1, 2, talker_hidden_size]`。首步位置是 `[0,1]`，随后第 `i` 个残差步使用位置 `[i+1]`，`generation_steps=i` 决定相应预测步骤。`DynamicCache` 在捕获的一个音频帧残差序列内使用，不是跨音频帧无限累积的 cache。greedy 和 sampling 分别捕获 graph；sampling 在 GPU 上做温度缩放、top-k 截断、softmax 和 multinomial。replay 后复制输出，避免后一次 replay 覆盖尚在使用的结果。
+
+**捕获与执行：** 先在独立 CUDA stream 上预热，再与当前 stream 同步，随后捕获。不能把 graph 当作普通无状态函数：它引用固定缓冲区，所以服务用锁限制单会话、Uvicorn 固定一个 worker。开启多个推理线程共享这些 buffers 会互相覆盖输入输出，不能直接用它测试并发吞吐。
+
+**解码与计数：** codes 转成 `[1, num_quantizers, frames]`，挑最小可容纳的桶，清零缓冲区、拷贝实际帧、replay。`samples_sent` 计算的是未裁静音前的模型采样数；发往浏览器的样本数可以更少。混用两个计数会导致后续波形切片错位，表现为漏音或重复。
+
+**线程与事件循环：** [`web_chat.py`](qwen3-tts-streaming-repro/web_chat.py) 用 HTTPX 异步读取 LLM SSE，独立 Python 线程执行 GPU 推理；推理事件通过 `loop.call_soon_threadsafe` 送入 asyncio 队列。这里的异步是让文本输入、推理和传输能够交错进行，不是并发运行多个 TTS 请求。
+
+### 复现时应看到什么
+
+服务启动应出现 `MTP: 32 real Talker inputs matched upstream greedy` 和 codec 对照日志，随后才开始接受请求。固定文本测试应产生 `full-*.wav/json`；严格首字测试应产生 `hold-0-prefix.wav`，且其中应能识别出“我”。不要仅凭 `/health` 成功或 prefix 文件非空判定通过。
+
+`bench.py` 的 summary 从 WebSocket 建立后的 `request_start` 计时，播放模拟从首 PCM 开始，不含浏览器的 12ms 排程余量和物理输出延迟。因此客户端基准的预计起音与浏览器显示值不能直接当作同一个指标。
+
+
 ## 链路与实验环境
 
 [Qwen3-TTS 官方仓库](https://github.com/QwenLM/Qwen3-TTS)提供了本实验使用的 `Qwen3-TTS-12Hz-0.6B-CustomVoice`。我们保留这个模型，在推理和传输路径上优化，没有训练新模型或替换成 Qwen-Omni Talker。
@@ -188,4 +264,6 @@ ASR 可能漏掉或误判发音问题，因此这些结果只是验收证据，�
 
 最值得保留的方法是：把首包与真实起音分开，把 LLM 延迟与 TTS 耗时分开，用延迟后文验证输入流式，用完整音频验证内容，再决定是否部署。**本次加速把链路推进到了数百毫秒起音，而不是已经实现了低于 100ms 的全链路语音交互。**
 
-*数据说明：本文数字来自 2026-10-21 的单会话实验记录。公开文章包含测量结果与方法，不附内部服务地址、会话日志、模型权重或完整部署源码；代码片段为解释实现的示意，不构成一键复现实验包。*
+*数据说明：本文数字来自 2026-10-21 的单会话实验记录。公开文章与复现目录包含服务及基准源码，不附内部服务地址、会话日志或模型权重；完整依赖快照的全新安装尚未验证，具体复现边界见目录说明。*
+
+复现代码独立进程复测：固定文本生成 2.778s，首有效 PCM 199ms；后文延迟5秒时首有效 PCM 217ms，截取首字ASR为“我”，全文对齐。复用了原安装环境，尚未验证全新依赖安装。详见[机器可读结果](qwen3-tts-streaming-repro/validation-result.json)。

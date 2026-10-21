@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-21",
+  "scope": "Public source snapshot, separate process, original installed Python environment; not a fresh dependency installation.",
+  "startup_checks": {
+    "real_mtp_inputs": 32,
+    "codec_checks": 8,
+    "max_codec_error": 0.00065303
+  },
+  "queue_tests_passed": 5,
+  "fixed": {
+    "name": "full-0",
+    "text": "你好，欢迎测试。今天我们测试首字朗读和持续音频生成的速度。",
+    "ttft_ms": 0.015733763575553894,
+    "first_pcm_ms": 199.2874015122652,
+    "first_text_to_pcm_ms": 199.27166774868965,
+    "first_nonquiet_pcm_ms": 199.2874015122652,
+    "text_end_ms": 0.08954107761383057,
+    "total_ms": 2777.875194326043,
+    "audio_seconds": 6.314708333333333,
+    "simulated_underrun_ms": 55.96005720893544,
+    "simulated_first_nonquiet_play_ms": 241.7874015122652,
+    "segments": 1,
+    "underflow_frames": 0,
+    "audio_before_text_end": false,
+    "status": "done",
+    "chunk_frames": 4,
+    "starvation": "segment",
+    "seed": 42
+  },
+  "hold": {
+    "name": "hold-0",
+    "text": "我喜欢读书，也喜欢听音乐。",
+    "ttft_ms": 0.016771256923675537,
+    "first_pcm_ms": 216.68953448534012,
+    "first_text_to_pcm_ms": 216.67276322841644,
+    "first_nonquiet_pcm_ms": 216.68953448534012,
+    "text_end_ms": 5002.053927630186,
+    "total_ms": 6815.203450620174,
+    "audio_seconds": 4.9707083333333335,
+    "simulated_underrun_ms": 4097.23284594218,
+    "simulated_first_nonquiet_play_ms": 261.1062011520068,
+    "segments": 2,
+    "underflow_frames": 0,
+    "audio_before_text_end": true,
+    "status": "done",
+    "chunk_frames": 4,
+    "starvation": "segment",
+    "seed": 44
+  },
+  "hold_asr": {
+    "prefix": "我。",
+    "full": "我喜欢读书，也喜欢听音乐。",
+    "model": "Qwen3-ASR-1.7B"
+  }
+}
