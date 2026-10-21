@@ -7,6 +7,7 @@
 当前主要目录：
 
 - `homepage/`：个人主页静态页面。
+- `blogs/`：中英文 Markdown 技术博客。
 - `files/`：公开静态文件和配置文件，例如规则、公钥、图标。
 - `scripts/`：可直接远程引用或执行的脚本、模块、用户脚本。
 
@@ -19,6 +20,14 @@
 | 用途 | 地址 |
 | --- | --- |
 | 个人主页 | `https://strike20023.github.io/homepage/` |
+
+### blogs
+
+| 用途 | 地址 |
+| --- | --- |
+| 博客目录 | [blogs/](blogs/README.md) |
+| Qwen3-TTS 流式优化（中文 Markdown） | [中文](blogs/2026-10-21-qwen3-tts-streaming-optimization.zh.md) |
+| Qwen3-TTS streaming optimization (English Markdown) | [English](blogs/2026-10-21-qwen3-tts-streaming-optimization.en.md) |
 
 ### files
 
