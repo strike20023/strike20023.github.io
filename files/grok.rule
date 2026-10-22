@@ -1,0 +1,17 @@
+# Grok / Grok Bot
+# Dedicated services and shared authentication
+DOMAIN-SUFFIX,grok.com
+DOMAIN-SUFFIX,x.ai
+DOMAIN-SUFFIX,grokusercontent.com
+DOMAIN-SUFFIX,grokipedia.com
+DOMAIN-SUFFIX,spacex.ai
+
+# Grok Bot API, assets, updates, and hosted computers (shared with Cursor)
+# https://docs.x.ai/grok-bot/proxies
+DOMAIN-SUFFIX,cursor.sh
+DOMAIN-SUFFIX,cursor.com
+DOMAIN-SUFFIX,cursor-cdn.com
+DOMAIN-SUFFIX,cursorapi.com
+DOMAIN-SUFFIX,cursorvm.com
+
+# X posts and media (x.com, twitter.com, twimg.com, t.co) are intentionally excluded.

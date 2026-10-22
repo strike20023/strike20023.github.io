@@ -1,4 +1,4 @@
-# Apple Intelligence / Siri / ChatGPT
+# Apple Intelligence / Siri
 
 # Apple region / service availability
 DOMAIN-WILDCARD,news*.apple.com
@@ -18,20 +18,3 @@ DOMAIN,apple-relay.apple.com
 DOMAIN,apple-relay.cloudflare.com
 DOMAIN,apple-relay.fastly-edge.com
 DOMAIN,cp4.cloudflare.com
-
-# ChatGPT / OpenAI
-DOMAIN-SUFFIX,chatgpt.com
-DOMAIN-SUFFIX,openai.com
-DOMAIN-SUFFIX,oaistatic.com
-DOMAIN-SUFFIX,oaiusercontent.com
-DOMAIN-SUFFIX,oaistatsig.com
-
-# ChatGPT authentication / verification
-DOMAIN-SUFFIX,workos.com
-DOMAIN-SUFFIX,workoscdn.com
-DOMAIN,challenges.cloudflare.com
-
-# ChatGPT Voice / Realtime
-DOMAIN,chatgpt.livekit.cloud
-DOMAIN,host.livekit.cloud
-DOMAIN,turn.livekit.cloud
