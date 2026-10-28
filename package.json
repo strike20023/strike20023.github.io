@@ -1,0 +1,12 @@
+{
+  "name": "strike20023-personal-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node tools/quartz/setup.mjs",
+    "build": "node tools/quartz/build.mjs",
+    "preview": "node tools/quartz/preview.mjs",
+    "check": "node tools/quartz/check.mjs"
+  },
+  "engines": { "node": ">=22", "npm": ">=10.9.2" }
+}

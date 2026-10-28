@@ -1,0 +1,10 @@
+import http from 'node:http';
+import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { engine, site } from './paths.mjs';
+if (!existsSync(site)) throw new Error('Run npm run build first.');
+const require = createRequire(path.join(engine, 'package.json'));
+const handler = require('serve-handler');
+const port = Number(process.env.PORT || 8080);
+http.createServer((req, res) => handler(req, res, { public: site, cleanUrls: true })).listen(port, '127.0.0.1', () => console.log(`Preview: http://127.0.0.1:${port}/`));

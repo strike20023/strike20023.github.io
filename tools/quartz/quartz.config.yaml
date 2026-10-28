@@ -1,0 +1,128 @@
+configuration:
+  pageTitle: Zhe Huang
+  pageTitleSuffix: ""
+  enableSPA: true
+  enablePopovers: true
+  analytics: null
+  locale: zh-CN
+  baseUrl: strike20023.github.io
+  ignorePatterns:
+    - .obsidian
+  theme:
+    fontOrigin: local
+    typography:
+      header: sans-serif
+      body: sans-serif
+      code: monospace
+    colors:
+      lightMode:
+        light: "#faf8f8"
+        lightgray: "#e5e5e5"
+        gray: "#b8b8b8"
+        darkgray: "#4e4e4e"
+        dark: "#2b2b2b"
+        secondary: "#284b63"
+        tertiary: "#84a59d"
+        highlight: "rgba(143, 159, 169, 0.15)"
+        textHighlight: "#fff23688"
+      darkMode:
+        light: "#161618"
+        lightgray: "#393639"
+        gray: "#646464"
+        darkgray: "#d4d4d4"
+        dark: "#ebebec"
+        secondary: "#7b97aa"
+        tertiary: "#84a59d"
+        highlight: "rgba(143, 159, 169, 0.15)"
+        textHighlight: "#b3aa0288"
+plugins:
+  - enabled: true
+    source: "@quartz-community/note-properties"
+    options:
+      hidePropertiesView: true
+    order: 0
+  - enabled: true
+    source: "@quartz-community/created-modified-date"
+    options:
+      priority: [frontmatter, filesystem]
+    order: 10
+  - enabled: true
+    source: "@quartz-community/syntax-highlighting"
+    options:
+      theme: {light: github-light, dark: github-dark}
+      keepBackground: false
+    order: 20
+  - enabled: true
+    source: "@quartz-community/obsidian-flavored-markdown"
+    order: 30
+  - enabled: true
+    source: "@quartz-community/github-flavored-markdown"
+    order: 40
+  - enabled: true
+    source: "@quartz-community/crawl-links"
+    options:
+      markdownLinkResolution: relative
+    order: 60
+  - enabled: true
+    source: "@quartz-community/description"
+    order: 70
+  - enabled: true
+    source: "@quartz-community/remove-draft"
+  - enabled: true
+    source: "@quartz-community/alias-redirects"
+  - enabled: true
+    source: "@quartz-community/content-index"
+    options:
+      enableSiteMap: true
+      enableRSS: true
+  - enabled: true
+    source: "@quartz-community/favicon"
+  - enabled: true
+    source: "@quartz-community/content-page"
+  - enabled: true
+    source: "@quartz-community/folder-page"
+  - enabled: true
+    source: "@quartz-community/tag-page"
+  - enabled: true
+    source: "@quartz-community/article-title"
+    layout: {position: beforeBody, priority: 10}
+  - enabled: true
+    source: "@quartz-community/content-meta"
+    layout: {position: beforeBody, priority: 20}
+  - enabled: true
+    source: "@quartz-community/breadcrumbs"
+    layout: {position: beforeBody, priority: 5, condition: not-index}
+  - enabled: true
+    source: "@quartz-community/page-title"
+    layout: {position: left, priority: 10}
+  - enabled: true
+    source: "@quartz-community/search"
+    layout: {position: left, priority: 20}
+  - enabled: true
+    source: "@quartz-community/darkmode"
+    layout: {position: left, priority: 30}
+  - enabled: true
+    source: "@quartz-community/explorer"
+    layout: {position: left, priority: 50}
+  - enabled: true
+    source: "@quartz-community/graph"
+    layout: {position: right, priority: 10}
+  - enabled: true
+    source: "@quartz-community/table-of-contents"
+    layout: {position: right, priority: 30}
+  - enabled: true
+    source: "@quartz-community/backlinks"
+    layout: {position: right, priority: 50}
+  - enabled: true
+    source: "@quartz-community/footer"
+    options:
+      links:
+        个人主页: https://strike20023.github.io/homepage/
+        GitHub: https://github.com/strike20023
+    layout: {position: footer, priority: 50}
+layout:
+  byPageType:
+    folder:
+      positions: {right: []}
+    tag:
+      positions: {right: []}

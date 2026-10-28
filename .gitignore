@@ -18,3 +18,10 @@ yarn-error.log*
 *.log
 *.tmp
 *.bak
+
+# Site build and local Obsidian state
+.site/
+.cache/
+blogs/.obsidian/*
+!blogs/.obsidian/app.json
+!blogs/.obsidian/core-plugins.json

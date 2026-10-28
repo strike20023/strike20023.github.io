@@ -1,6 +1,14 @@
+---
+title: "从首个可读 token 到出声：一次 Qwen3-TTS 流式链路优化"
+date: 2026-10-21
+tags:
+  - speech/tts
+  - optimization
+---
+
 # 从首个可读 token 到出声：一次 Qwen3-TTS 流式链路优化
 
-2026-10-21 · [English](2026-10-21-qwen3-tts-streaming-optimization.en.md)
+2026-10-21 · [English](optimization.en.md)
 
 ## 摘要
 
@@ -101,7 +109,7 @@ Web、LLM 和 TTS 在同一台服务器上，TTS 使用一张 RTX 4090 D，LLM �
 
 ### 3.1 从观测到干预，而不是先选优化工具
 
-先在固定文本、预热后的单会话运行中，对残差预测器和 decoder 的调用前后同步 CUDA 并计时。该次运行生成 6.64s 音频，用时 8.357s。原始汇总见[基线 profiling 数据](qwen3-tts-streaming-repro/baseline-profile.json)。
+先在固定文本、预热后的单会话运行中，对残差预测器和 decoder 的调用前后同步 CUDA 并计时。该次运行生成 6.64s 音频，用时 8.357s。原始汇总见[基线 profiling 数据](repro/baseline-profile.json)。
 
 | 计时区域 | 调用次数 | 累计耗时 | 占本次总耗时 |
 | --- | ---: | ---: | ---: |
@@ -316,7 +324,7 @@ ASR 可能漏掉或误判发音问题，因此这些结果只是验收证据，�
 
 ## 附录 A：框架版本、实现细节与复现命令
 
-现在提供[复现实验目录](qwen3-tts-streaming-repro/README.md)，包含完整的推理适配器、CUDA Graph 实现、FastAPI 服务、浏览器页面和基准客户端；不再只有伪代码。可先不接 LLM，仅用 `/ws` 跑固定文本，再接 `/chat` 测端到端。
+现在提供[复现实验目录](repro/README.md)，包含完整的推理适配器、CUDA Graph 实现、FastAPI 服务、浏览器页面和基准客户端；不再只有伪代码。可先不接 LLM，仅用 `/ws` 跑固定文本，再接 `/chat` 测端到端。
 
 | 层 | 实际实现与版本 |
 | --- | --- |
@@ -331,13 +339,13 @@ ASR 可能漏掉或误判发音问题，因此这些结果只是验收证据，�
 
 TTS 路径使用原生 PyTorch 和 Transformers，**没有使用 vLLM、SGLang、TensorRT、`torch.compile`、量化或新训练**。注意力实现是 SDPA；CUDA Graph 加速的是残差预测器和波形 decoder，Talker 主干仍走普通生成路径。Web 前端是原生 JavaScript，没有构建步骤。
 
-[完整依赖快照](qwen3-tts-streaming-repro/requirements-observed.txt)来自已运行环境，而不是重新求解的 lockfile。特别是环境里的 torchaudio 为 2.11.0，与 torch 版本不一致；不能据此推断这是一组推荐的二进制兼容版本。完整快照的全新环境安装尚未验证，已从下载缓存的13份元数据（含两个权重文件）核对模型 revision 为 `85e237c12c027371202489a0ec509ded67b5e4b5`。下面命令固定该版本，但仍不承诺跨环境逐 bit 相同的声音。
+[完整依赖快照](repro/requirements-observed.txt)来自已运行环境，而不是重新求解的 lockfile。特别是环境里的 torchaudio 为 2.11.0，与 torch 版本不一致；不能据此推断这是一组推荐的二进制兼容版本。完整快照的全新环境安装尚未验证，已从下载缓存的13份元数据（含两个权重文件）核对模型 revision 为 `85e237c12c027371202489a0ec509ded67b5e4b5`。下面命令固定该版本，但仍不承诺跨环境逐 bit 相同的声音。
 
 ### 快速复现顺序
 
 ```bash
 git clone https://github.com/strike20023/strike20023.github.io.git
-cd strike20023.github.io/blogs/qwen3-tts-streaming-repro
+cd strike20023.github.io/blogs/qwen3-tts-streaming/repro
 uv venv --python 3.11.12 .venv
 source .venv/bin/activate
 uv pip install -r requirements-observed.txt
@@ -373,15 +381,15 @@ python check_prefix.py outputs/hold
 
 ### 从函数看实现细节
 
-**输入适配：** [`install_adapter()`](qwen3-tts-streaming-repro/streaming.py) 通过 `inspect.getsource` 获取当前安装包的 Talker `forward`，在已断言存在的文本 embedding 分支插入队列消费逻辑，再把新方法绑定到模型实例；没有修改 site-packages。这个方法依赖确切源码结构，升级 qwen-tts/Transformers 后需要重新核查。尚未给当前段提供文本 EOS 时屏蔽 codec EOS，避免模型在已知文字未消费完时结束；`pending`、未读字符串和队列终止标记必须分开处理。
+**输入适配：** [`install_adapter()`](repro/streaming.py) 通过 `inspect.getsource` 获取当前安装包的 Talker `forward`，在已断言存在的文本 embedding 分支插入队列消费逻辑，再把新方法绑定到模型实例；没有修改 site-packages。这个方法依赖确切源码结构，升级 qwen-tts/Transformers 后需要重新核查。尚未给当前段提供文本 EOS 时屏蔽 codec EOS，避免模型在已知文字未消费完时结束；`pending`、未读字符串和队列终止标记必须分开处理。
 
-**MTP 缓冲与位置：** [`install_mtp()`](qwen3-tts-streaming-repro/fast_inference.py) 的静态输入形状为 `[1, 2, talker_hidden_size]`。首步位置是 `[0,1]`，随后第 `i` 个残差步使用位置 `[i+1]`，`generation_steps=i` 决定相应预测步骤。`DynamicCache` 在捕获的一个音频帧残差序列内使用，不是跨音频帧无限累积的 cache。greedy 和 sampling 分别捕获 graph；sampling 在 GPU 上做温度缩放、top-k 截断、softmax 和 multinomial。replay 后复制输出，避免后一次 replay 覆盖尚在使用的结果。
+**MTP 缓冲与位置：** [`install_mtp()`](repro/fast_inference.py) 的静态输入形状为 `[1, 2, talker_hidden_size]`。首步位置是 `[0,1]`，随后第 `i` 个残差步使用位置 `[i+1]`，`generation_steps=i` 决定相应预测步骤。`DynamicCache` 在捕获的一个音频帧残差序列内使用，不是跨音频帧无限累积的 cache。greedy 和 sampling 分别捕获 graph；sampling 在 GPU 上做温度缩放、top-k 截断、softmax 和 multinomial。replay 后复制输出，避免后一次 replay 覆盖尚在使用的结果。
 
 **捕获与执行：** 先在独立 CUDA stream 上预热，再与当前 stream 同步，随后捕获。不能把 graph 当作普通无状态函数：它引用固定缓冲区，所以服务用锁限制单会话、Uvicorn 固定一个 worker。开启多个推理线程共享这些 buffers 会互相覆盖输入输出，不能直接用它测试并发吞吐。
 
 **解码与计数：** codes 转成 `[1, num_quantizers, frames]`，挑最小可容纳的桶，清零缓冲区、拷贝实际帧、replay。`samples_sent` 计算的是未裁静音前的模型采样数；发往浏览器的样本数可以更少。混用两个计数会导致后续波形切片错位，表现为漏音或重复。
 
-**线程与事件循环：** [`web_chat.py`](qwen3-tts-streaming-repro/web_chat.py) 用 HTTPX 异步读取 LLM SSE，独立 Python 线程执行 GPU 推理；推理事件通过 `loop.call_soon_threadsafe` 送入 asyncio 队列。这里的异步是让文本输入、推理和传输能够交错进行，不是并发运行多个 TTS 请求。
+**线程与事件循环：** [`web_chat.py`](repro/web_chat.py) 用 HTTPX 异步读取 LLM SSE，独立 Python 线程执行 GPU 推理；推理事件通过 `loop.call_soon_threadsafe` 送入 asyncio 队列。这里的异步是让文本输入、推理和传输能够交错进行，不是并发运行多个 TTS 请求。
 
 ### 复现时应看到什么
 
@@ -391,4 +399,4 @@ python check_prefix.py outputs/hold
 
 *数据说明：本文数字来自 2026-10-21 的单会话实验记录。公开文章与复现目录包含服务及基准源码，不附内部服务地址、会话日志或模型权重；完整依赖快照的全新安装尚未验证，具体复现边界见目录说明。*
 
-复现代码独立进程复测：固定文本生成 2.778s，首有效 PCM 199ms；后文延迟5秒时首有效 PCM 217ms，截取首字ASR为“我”，全文对齐。复用了原安装环境，尚未验证全新依赖安装。详见[机器可读结果](qwen3-tts-streaming-repro/validation-result.json)。
+复现代码独立进程复测：固定文本生成 2.778s，首有效 PCM 199ms；后文延迟5秒时首有效 PCM 217ms，截取首字ASR为“我”，全文对齐。复用了原安装环境，尚未验证全新依赖安装。详见[机器可读结果](repro/validation-result.json)。

@@ -1,6 +1,6 @@
 # Qwen3-TTS streaming reproduction kit
 
-[中文技术文章](../2026-10-21-qwen3-tts-streaming-optimization.zh.md) · [English technical article](../2026-10-21-qwen3-tts-streaming-optimization.en.md)
+[中文技术文章](../optimization.zh.md) · [English technical article](../optimization.en.md)
 
 This directory contains an executable snapshot of the experimental serving and benchmark code. Internal addresses and LLM identifiers have been replaced by environment variables. It is a single-session research implementation, not an upstream Qwen API or a production serving framework.
 
@@ -47,7 +47,7 @@ Use a Linux NVIDIA CUDA environment. The captured path is not implemented for CP
 From the repository root:
 
 ```bash
-cd blogs/qwen3-tts-streaming-repro
+cd blogs/qwen3-tts-streaming/repro
 uv venv --python 3.11.12 .venv
 source .venv/bin/activate
 

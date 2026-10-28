@@ -1,6 +1,14 @@
+---
+title: "From the First Readable Token to Speech: Optimizing a Qwen3-TTS Streaming Pipeline"
+date: 2026-10-21
+tags:
+  - speech/tts
+  - optimization
+---
+
 # From the First Readable Token to Speech: Optimizing a Qwen3-TTS Streaming Pipeline
 
-October 21, 2026 · [中文版](2026-10-21-qwen3-tts-streaming-optimization.zh.md)
+October 21, 2026 · [中文版](optimization.zh.md)
 
 ## Abstract
 
@@ -101,7 +109,7 @@ Estimated onset is not a microphone measurement of a physical speaker. An amplit
 
 ### 3.1 Choose interventions from observations
 
-We first timed residual prediction and decoder calls in a warmed, fixed-text, single-session run, synchronizing CUDA around the measured regions. That run took 8.357s to generate 6.64s of audio. The [baseline profile summary](qwen3-tts-streaming-repro/baseline-profile.json) is included with the code.
+We first timed residual prediction and decoder calls in a warmed, fixed-text, single-session run, synchronizing CUDA around the measured regions. That run took 8.357s to generate 6.64s of audio. The [baseline profile summary](repro/baseline-profile.json) is included with the code.
 
 | Timed region | Calls | Accumulated time | Share of total |
 | --- | ---: | ---: | ---: |
@@ -317,7 +325,7 @@ The useful method is to separate packet arrival from audible onset, separate LLM
 
 ## Appendix A: frameworks, implementation details, and reproduction
 
-A [reproduction directory](qwen3-tts-streaming-repro/README.md) now includes the complete adapter, CUDA Graph implementation, FastAPI service, browser UI, and benchmark clients. Start with the standalone `/ws` text-to-speech test, then connect an LLM through `/chat`.
+A [reproduction directory](repro/README.md) now includes the complete adapter, CUDA Graph implementation, FastAPI service, browser UI, and benchmark clients. Start with the standalone `/ws` text-to-speech test, then connect an LLM through `/chat`.
 
 | Layer | Implementation and observed version |
 | --- | --- |
@@ -332,13 +340,13 @@ A [reproduction directory](qwen3-tts-streaming-repro/README.md) now includes the
 
 The TTS acceleration path uses native PyTorch and Transformers: **no vLLM, SGLang, TensorRT, `torch.compile`, quantization, or new training**. Attention uses SDPA. Graphs accelerate the residual predictor and waveform decoder; the Talker backbone retains ordinary generation. The frontend is plain JavaScript without a build step.
 
-The [full dependency inventory](qwen3-tts-streaming-repro/requirements-observed.txt) records the installed environment, not a freshly resolved lockfile. In particular, torchaudio was 2.11.0 while torch was 2.14.1; these observed versions are not a recommended ABI compatibility pair. A fresh installation of the entire inventory has not been validated, and the kit does not guarantee bitwise-identical environments or waveforms. The model revision was recovered from all 13 cached download metadata records, including both weight files: `85e237c12c027371202489a0ec509ded67b5e4b5`. The commands below pin it.
+The [full dependency inventory](repro/requirements-observed.txt) records the installed environment, not a freshly resolved lockfile. In particular, torchaudio was 2.11.0 while torch was 2.14.1; these observed versions are not a recommended ABI compatibility pair. A fresh installation of the entire inventory has not been validated, and the kit does not guarantee bitwise-identical environments or waveforms. The model revision was recovered from all 13 cached download metadata records, including both weight files: `85e237c12c027371202489a0ec509ded67b5e4b5`. The commands below pin it.
 
 ### Run the experiment in stages
 
 ```bash
 git clone https://github.com/strike20023/strike20023.github.io.git
-cd strike20023.github.io/blogs/qwen3-tts-streaming-repro
+cd strike20023.github.io/blogs/qwen3-tts-streaming/repro
 uv venv --python 3.11.12 .venv
 source .venv/bin/activate
 uv pip install -r requirements-observed.txt
@@ -374,15 +382,15 @@ For the LLM integration, set `LLM_URL` to the complete OpenAI-compatible chat-co
 
 ### Function-level implementation details
 
-**Text adaptation.** [`install_adapter()`](qwen3-tts-streaming-repro/streaming.py) obtains the installed Talker `forward` with `inspect.getsource`, asserts a known text-embedding source anchor, inserts queue consumption, and binds the resulting method to the instance. It does not edit site-packages. This is intentionally source-version-sensitive. Codec EOS is masked until the current segment has received text EOS; pending token pieces, unconsumed text, and the request-end marker are separate states.
+**Text adaptation.** [`install_adapter()`](repro/streaming.py) obtains the installed Talker `forward` with `inspect.getsource`, asserts a known text-embedding source anchor, inserts queue consumption, and binds the resulting method to the instance. It does not edit site-packages. This is intentionally source-version-sensitive. Codec EOS is masked until the current segment has received text EOS; pending token pieces, unconsumed text, and the request-end marker are separate states.
 
-**Residual buffers and positions.** [`install_mtp()`](qwen3-tts-streaming-repro/fast_inference.py) uses static input shape `[1, 2, talker_hidden_size]`. Initial positions are `[0,1]`; subsequent residual step `i` uses `[i+1]` and `generation_steps=i`. `DynamicCache` belongs to the residual sequence within one audio frame, not an indefinitely growing cache across audio frames. Greedy and sampled graphs are captured separately. Sampling performs temperature scaling, top-k filtering, softmax, and multinomial selection on the GPU. The replay result is cloned so the next replay cannot overwrite a result still in use.
+**Residual buffers and positions.** [`install_mtp()`](repro/fast_inference.py) uses static input shape `[1, 2, talker_hidden_size]`. Initial positions are `[0,1]`; subsequent residual step `i` uses `[i+1]` and `generation_steps=i`. `DynamicCache` belongs to the residual sequence within one audio frame, not an indefinitely growing cache across audio frames. Greedy and sampled graphs are captured separately. Sampling performs temperature scaling, top-k filtering, softmax, and multinomial selection on the GPU. The replay result is cloned so the next replay cannot overwrite a result still in use.
 
 **Capture and execution.** The code warms on a separate CUDA stream, synchronizes with the current stream, then captures. A graph references fixed buffers and is not a stateless function. The service consequently enforces a single session and one Uvicorn worker. Multiple inference threads sharing these buffers can overwrite one another's inputs and outputs; this implementation cannot be used unchanged for concurrent throughput benchmarks.
 
 **Decoding and counters.** Codes are shaped `[1, num_quantizers, frames]`. The smallest fitting bucket is zeroed, populated with actual frames, and replayed. `samples_sent` counts model samples before leading-silence removal; emitted PCM may contain fewer samples. Mixing these counters shifts subsequent waveform slices and can cause missing or repeated audio.
 
-**Threads and the event loop.** [`web_chat.py`](qwen3-tts-streaming-repro/web_chat.py) uses HTTPX for asynchronous SSE ingestion and a separate Python thread for GPU inference. `loop.call_soon_threadsafe` transfers inference events to an asyncio queue. This lets text arrival, computation, and delivery overlap; it does not run multiple TTS sessions concurrently.
+**Threads and the event loop.** [`web_chat.py`](repro/web_chat.py) uses HTTPX for asynchronous SSE ingestion and a separate Python thread for GPU inference. `loop.call_soon_threadsafe` transfers inference events to an asyncio queue. This lets text arrival, computation, and delivery overlap; it does not run multiple TTS sessions concurrently.
 
 ### Expected validation output
 
@@ -392,4 +400,4 @@ Startup should print `MTP: 32 real Talker inputs matched upstream greedy` and co
 
 *Data note: measurements come from the single-session experiments on October 21, 2026. The article and reproduction directory include serving and benchmark source, but not internal addresses, session logs, or model weights. A fresh installation of the full dependency inventory has not been validated; see the reproduction notes for scope.*
 
-Independent-process check of the public snapshot: fixed-text generation 2.778s, first non-silent PCM 199ms; withheld-text trial first non-silent PCM 217ms, prefix ASR “我”, full transcript aligned. This reused the original installed environment, not a fresh dependency installation. See [machine-readable results](qwen3-tts-streaming-repro/validation-result.json).
+Independent-process check of the public snapshot: fixed-text generation 2.778s, first non-silent PCM 199ms; withheld-text trial first non-silent PCM 217ms, prefix ASR “我”, full transcript aligned. This reused the original installed environment, not a fresh dependency installation. See [machine-readable results](repro/validation-result.json).

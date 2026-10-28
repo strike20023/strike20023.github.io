@@ -1,0 +1,21 @@
+{
+  "blogs/2026-10-21-qwen3-tts-streaming-optimization.en.md": "blogs/qwen3-tts-streaming/optimization.en.md",
+  "blogs/2026-10-21-qwen3-tts-streaming-optimization.zh.md": "blogs/qwen3-tts-streaming/optimization.zh.md",
+  "blogs/README.md": "blogs/README.md",
+  "blogs/qwen3-tts-streaming-repro/.gitignore": "blogs/qwen3-tts-streaming/repro/.gitignore",
+  "blogs/qwen3-tts-streaming-repro/README.md": "blogs/qwen3-tts-streaming/repro/README.md",
+  "blogs/qwen3-tts-streaming-repro/baseline-profile.json": "blogs/qwen3-tts-streaming/repro/baseline-profile.json",
+  "blogs/qwen3-tts-streaming-repro/bench.py": "blogs/qwen3-tts-streaming/repro/bench.py",
+  "blogs/qwen3-tts-streaming-repro/bench_chat.py": "blogs/qwen3-tts-streaming/repro/bench_chat.py",
+  "blogs/qwen3-tts-streaming-repro/check_prefix.py": "blogs/qwen3-tts-streaming/repro/check_prefix.py",
+  "blogs/qwen3-tts-streaming-repro/fast_inference.py": "blogs/qwen3-tts-streaming/repro/fast_inference.py",
+  "blogs/qwen3-tts-streaming-repro/profile_stream.py": "blogs/qwen3-tts-streaming/repro/profile_stream.py",
+  "blogs/qwen3-tts-streaming-repro/requirements-observed.txt": "blogs/qwen3-tts-streaming/repro/requirements-observed.txt",
+  "blogs/qwen3-tts-streaming-repro/run.sh": "blogs/qwen3-tts-streaming/repro/run.sh",
+  "blogs/qwen3-tts-streaming-repro/server.py": "blogs/qwen3-tts-streaming/repro/server.py",
+  "blogs/qwen3-tts-streaming-repro/streaming.py": "blogs/qwen3-tts-streaming/repro/streaming.py",
+  "blogs/qwen3-tts-streaming-repro/test_queue.py": "blogs/qwen3-tts-streaming/repro/test_queue.py",
+  "blogs/qwen3-tts-streaming-repro/validation-result.json": "blogs/qwen3-tts-streaming/repro/validation-result.json",
+  "blogs/qwen3-tts-streaming-repro/web.html": "blogs/qwen3-tts-streaming/repro/web.html",
+  "blogs/qwen3-tts-streaming-repro/web_chat.py": "blogs/qwen3-tts-streaming/repro/web_chat.py"
+}

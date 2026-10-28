@@ -6,8 +6,9 @@
 
 当前主要目录：
 
-- `homepage/`：个人主页静态页面。
-- `blogs/`：中英文 Markdown 技术博客。
+- `homepage/`：个人主页 Markdown。
+- `blogs/`：按项目组织的 Markdown 博客，可在 Obsidian 中打开。
+- `tools/quartz/`：Quartz 配置、构建与公开地址兼容规则。
 - `files/`：公开静态文件和配置文件，例如规则、公钥、图标。
 - `scripts/`：可直接远程引用或执行的脚本、模块、用户脚本。
 
@@ -25,9 +26,9 @@
 
 | 用途 | 地址 |
 | --- | --- |
-| 博客目录 | [blogs/](blogs/README.md) |
-| Qwen3-TTS 流式优化（中文 Markdown） | [中文](blogs/2026-10-21-qwen3-tts-streaming-optimization.zh.md) |
-| Qwen3-TTS streaming optimization (English Markdown) | [English](blogs/2026-10-21-qwen3-tts-streaming-optimization.en.md) |
+| 博客目录 | [博客网站](https://strike20023.github.io/blogs/) |
+| Qwen3-TTS 流式优化（中文 Markdown） | [中文](blogs/qwen3-tts-streaming/optimization.zh.md) |
+| Qwen3-TTS streaming optimization (English Markdown) | [English](blogs/qwen3-tts-streaming/optimization.en.md) |
 
 ### files
 
@@ -72,3 +73,23 @@ bash <(curl -fsSL https://strike20023.github.io/scripts/create_a_wechat_clone.sh
 - 脚本、模块、用户脚本放进 `scripts/`。
 - 新增公开文件后，同步在本 README 的「公开地址」中登记。
 - 不提交系统生成物、缓存、临时文件；这些由 `.gitignore` 处理。
+
+## 本地编辑与发布
+
+网站统一使用 Quartz。个人主页编辑 `homepage/index.md`，博客编辑 `blogs/` 下对应项目的 Markdown。
+
+需要 Node.js 22 或更高版本、npm 10.9.2 或更高版本和 Git。
+
+```sh
+npm ci
+npm run setup
+npm run build
+npm run check
+npm run preview
+```
+
+预览地址为 `http://127.0.0.1:8080/`。修改内容后重新运行 `npm run build` 并刷新页面。推送到 `main` 后，GitHub Actions 自动构建并发布网站。
+
+在 Obsidian 中选择“打开本地仓库”，打开 `blogs` 目录即可编辑博客。
+
+Quartz 版本固定在 `tools/quartz/upstream.json`；页面配置位于 `tools/quartz/quartz.config.yaml`。构建产物位于 `.site/`。旧公开博客路径在 `tools/quartz/legacy-paths.json` 中维护，由构建流程生成。
