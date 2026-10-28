@@ -5,6 +5,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { root, engine, site } from './paths.mjs';
 import { addCompatibility, redirect } from './compat.mjs';
+import { prepareLanguages, mergeLanguages } from './languages.mjs';
 
 if (!existsSync(path.join(engine, 'node_modules'))) throw new Error('Run npm run setup first.');
 cpSync(new URL('./quartz.config.yaml', import.meta.url), path.join(engine, 'quartz.config.yaml'));
@@ -42,6 +43,7 @@ function prepareMarkdown(dir) {
     writeFileSync(file, text);
   }
 }
+const english = prepareLanguages(input);
 prepareMarkdown(input);
 execFileSync(process.execPath, ['quartz/bootstrap-cli.mjs', 'build', '-d', input, '-o', path.join(site, 'blogs'), '--concurrency=2'], { cwd: engine, stdio: 'inherit' });
 // Preserve the source files used by direct downloads and scripts.
@@ -52,4 +54,10 @@ writeFileSync(path.join(site, 'index.html'), redirect('homepage/'));
 writeFileSync(path.join(site, 'README.html'), redirect('homepage/'));
 writeFileSync(path.join(site, '.nojekyll'), '');
 addCompatibility();
+const englishOutput = mkdtempSync(path.join(tmpdir(), 'zhe-quartz-en-'));
+process.on('exit', () => rmSync(englishOutput, { recursive: true, force: true }));
+for (const [slug, text] of english) writeFileSync(path.join(input, `${slug}.md`), text);
+prepareMarkdown(input);
+execFileSync(process.execPath, ['quartz/bootstrap-cli.mjs', 'build', '-d', input, '-o', englishOutput, '--concurrency=2'], { cwd: engine, stdio: 'inherit' });
+mergeLanguages(path.join(site, 'blogs'), englishOutput);
 console.log(`Built ${site}`);

@@ -8,5 +8,11 @@
     "preview": "node tools/quartz/preview.mjs",
     "check": "node tools/quartz/check.mjs"
   },
-  "engines": { "node": ">=22", "npm": ">=10.9.2" }
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10.9.2"
+  },
+  "devDependencies": {
+    "cheerio": "^1.2.0"
+  }
 }

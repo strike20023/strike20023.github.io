@@ -1,0 +1,5 @@
+[data-article-lang][hidden] { display: none !important; }
+.article-languages { display: flex; gap: .4rem; margin: 1rem 0 1.5rem; }
+.article-languages button { font: inherit; font-size: .85rem; padding: .25rem .7rem; border: 1px solid var(--lightgray); border-radius: .4rem; background: var(--light); color: var(--darkgray); cursor: pointer; }
+.article-languages button[aria-pressed="true"] { background: var(--secondary); border-color: var(--secondary); color: var(--light); }
+.article-languages button:focus-visible { outline: 2px solid var(--tertiary); outline-offset: 3px; }

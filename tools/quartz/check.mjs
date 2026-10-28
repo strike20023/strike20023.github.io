@@ -49,15 +49,36 @@ for (const file of files(path.join(root, 'blogs')).filter(f => f.endsWith('.md')
     assert(existsSync(path.resolve(path.dirname(file), decodeURIComponent(href.split('#')[0]))), `Broken Markdown reference ${href} in ${file}`);
   }
 }
-for (const page of ['blogs/index.html', 'blogs/qwen3-tts-streaming/index.html', 'blogs/qwen3-tts-streaming/optimization.zh.html', 'blogs/qwen3-tts-streaming/optimization.en.html', 'blogs/qwen3-tts-streaming/repro/readme.html']) {
+for (const page of ['blogs/index.html', 'blogs/qwen3-tts-streaming/index.html', 'blogs/qwen3-tts-streaming/optimization.html', 'blogs/apple-silicon-gpu-precision.html', 'blogs/qwen3-tts-streaming/repro/readme.html']) {
   const html = readFileSync(path.join(site, page), 'utf8');
   assert(/<article[\s>]/.test(html), `Missing article body: ${page}`);
   assert(!html.includes('<title>无题</title>'), `Missing page title: ${page}`);
 }
-assert(readFileSync(path.join(site, 'blogs/qwen3-tts-streaming/optimization.zh.html'), 'utf8').includes('CUDA Graph'));
+assert(readFileSync(path.join(site, 'blogs/qwen3-tts-streaming/optimization.html'), 'utf8').includes('CUDA Graph'));
 assert(![...outputFiles].some(f => /(?:__pycache__|\.pyc$|\.env$|node_modules)/.test(f)), 'Published a local cache or environment file');
 assert(existsSync(path.join(site, 'blogs/qwen3-tts-streaming/optimization.zh.html')));
 assert(existsSync(path.join(site, 'blogs/qwen3-tts-streaming/optimization.en.html')));
 assert(!files(site).some(f => f.includes('/.obsidian/')), 'Published Obsidian configuration');
-assert(readFileSync(path.join(site, 'blogs/static/contentIndex.json'), 'utf8').includes('optimization.zh'), 'Missing article in search index');
+const contentIndex = JSON.parse(readFileSync(path.join(site, 'blogs/static/contentIndex.json'), 'utf8'));
+assert(contentIndex['qwen3-tts-streaming/optimization'], 'Missing canonical article');
+assert(!Object.keys(contentIndex).some(k => /optimization\.(zh|en)$/.test(k)), 'Duplicate language in index');
+assert(contentIndex['qwen3-tts-streaming/optimization'].content.includes('Abstract'), 'English not searchable');
+assert(contentIndex['apple-silicon-gpu-precision'], 'Missing new article');
+const { load } = await import('cheerio');
+const article = load(readFileSync(path.join(site, 'blogs/qwen3-tts-streaming/optimization.html'), 'utf8'));
+assert.equal(article('article [data-article-lang]').length, 2);
+assert.equal(article('[data-set-lang]').length, 2);
+assert(article('article [data-article-lang=en]').attr('hidden') !== undefined);
+// Quartz itself repeats list and Mermaid dialog IDs; validate article anchors only.
+const ids = article('article [id]').not('#mermaid-container, #mermaid-space').map((_, el) => article(el).attr('id')).get();
+assert.equal(ids.length, new Set(ids).size, 'Duplicate translated IDs');
+for (const lang of ['zh', 'en']) assert(readFileSync(path.join(site, `blogs/qwen3-tts-streaming/optimization.${lang}.html`), 'utf8').includes(`optimization?lang=${lang}`));
+for (const name of ['index.xml', 'sitemap.xml']) {
+  const xml = readFileSync(path.join(site, 'blogs', name), 'utf8');
+  assert(!/optimization\.(zh|en)/.test(xml), `Duplicate translations in ${name}`);
+}
+const gpu = load(readFileSync(path.join(site, 'blogs/apple-silicon-gpu-precision.html'), 'utf8'));
+assert(gpu('[data-footnotes] li').length >= 20, 'Missing source footnotes');
+assert(gpu('article').text().includes('115.094'));
+
 console.log(`Verified ${references} HTML references, ${Object.keys(legacy).length} legacy files, Markdown links, and unchanged scripts/files.`);
