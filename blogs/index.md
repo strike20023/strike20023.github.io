@@ -9,9 +9,9 @@ description: 黄喆的技术实践、实验记录与项目复现。
 
 ## 文章
 
-### [Mac 的 Apple Silicon GPU 算力](apple-silicon-gpu-precision.md)
+### [Apple Silicon GPU 算力实录](apple-silicon-gpu-precision.md)
 
-全型号 GPU 配置，以及 FP32、FP16、BF16、FP8、MXFP4 和 INT8 的公开测量与计算路径。
+41 种 GPU 配置的计算规模，FP32、FP16、BF16、FP8、MXFP4、INT8 的公开实测，以及量化模型的 prefill/decode 对照。
 
 ## 项目
 
