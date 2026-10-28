@@ -6,9 +6,9 @@
 
 当前主要目录：
 
-- `homepage/`：个人主页 Markdown。
+- `homepage/`：个人主页 HTML 和 CSS。
 - `blogs/`：按项目组织的 Markdown 博客，可在 Obsidian 中打开。
-- `tools/quartz/`：Quartz 配置、构建与公开地址兼容规则。
+- `tools/quartz/`：博客的 Quartz 配置、构建与公开地址兼容规则。
 - `files/`：公开静态文件和配置文件，例如规则、公钥、图标。
 - `scripts/`：可直接远程引用或执行的脚本、模块、用户脚本。
 
@@ -76,7 +76,7 @@ bash <(curl -fsSL https://strike20023.github.io/scripts/create_a_wechat_clone.sh
 
 ## 本地编辑与发布
 
-网站统一使用 Quartz。个人主页编辑 `homepage/index.md`，博客编辑 `blogs/` 下对应项目的 Markdown。
+博客使用 Quartz，编辑 `blogs/` 下对应项目的 Markdown。个人主页位于 `homepage/index.html`，样式位于 `homepage/styles.css`。
 
 需要 Node.js 22 或更高版本、npm 10.9.2 或更高版本和 Git。
 

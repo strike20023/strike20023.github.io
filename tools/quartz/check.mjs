@@ -27,7 +27,7 @@ for (const file of files(site).filter(f => f.endsWith('.html'))) {
     references++;
   }
 }
-for (const folder of ['scripts', 'files']) {
+for (const folder of ['homepage', 'scripts', 'files']) {
   for (const file of files(path.join(root, folder))) {
     assert.deepEqual(readFileSync(path.join(site, path.relative(root, file))), readFileSync(file), `Changed public resource: ${file}`);
   }
@@ -49,7 +49,7 @@ for (const file of files(path.join(root, 'blogs')).filter(f => f.endsWith('.md')
     assert(existsSync(path.resolve(path.dirname(file), decodeURIComponent(href.split('#')[0]))), `Broken Markdown reference ${href} in ${file}`);
   }
 }
-for (const page of ['index.html', 'blogs/index.html', 'blogs/qwen3-tts-streaming/index.html', 'blogs/qwen3-tts-streaming/optimization.zh.html', 'blogs/qwen3-tts-streaming/optimization.en.html', 'blogs/qwen3-tts-streaming/repro/readme.html']) {
+for (const page of ['blogs/index.html', 'blogs/qwen3-tts-streaming/index.html', 'blogs/qwen3-tts-streaming/optimization.zh.html', 'blogs/qwen3-tts-streaming/optimization.en.html', 'blogs/qwen3-tts-streaming/repro/readme.html']) {
   const html = readFileSync(path.join(site, page), 'utf8');
   assert(/<article[\s>]/.test(html), `Missing article body: ${page}`);
   assert(!html.includes('<title>无题</title>'), `Missing page title: ${page}`);
@@ -59,5 +59,5 @@ assert(![...outputFiles].some(f => /(?:__pycache__|\.pyc$|\.env$|node_modules)/.
 assert(existsSync(path.join(site, 'blogs/qwen3-tts-streaming/optimization.zh.html')));
 assert(existsSync(path.join(site, 'blogs/qwen3-tts-streaming/optimization.en.html')));
 assert(!files(site).some(f => f.includes('/.obsidian/')), 'Published Obsidian configuration');
-assert(readFileSync(path.join(site, 'static/contentIndex.json'), 'utf8').includes('optimization.zh'), 'Missing article in search index');
+assert(readFileSync(path.join(site, 'blogs/static/contentIndex.json'), 'utf8').includes('optimization.zh'), 'Missing article in search index');
 console.log(`Verified ${references} HTML references, ${Object.keys(legacy).length} legacy files, Markdown links, and unchanged scripts/files.`);

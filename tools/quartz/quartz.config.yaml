@@ -1,11 +1,11 @@
 configuration:
-  pageTitle: Zhe Huang
+  pageTitle: Zhe Huang · Blogs
   pageTitleSuffix: ""
   enableSPA: true
   enablePopovers: true
   analytics: null
   locale: zh-CN
-  baseUrl: strike20023.github.io
+  baseUrl: strike20023.github.io/blogs
   ignorePatterns:
     - .obsidian
   theme:

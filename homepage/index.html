@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zhe Huang | Personal Homepage</title>
+    <meta
+      name="description"
+      content="Zhe Huang is a master's student and engineer based in Beijing, working across machine learning, software systems, and practical AI projects."
+    >
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Zhe Huang home">Zhe Huang</a>
+      <nav class="nav" aria-label="Primary navigation">
+        <a href="#about">About</a>
+        <a href="#work">Work</a>
+        <a href="#writing">Writing</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="intro section-band">
+        <div class="intro-copy">
+          <p class="eyebrow">Master's Student · Engineer · Builder</p>
+          <h1>Hi, I am Zhe Huang.</h1>
+          <p class="lead">
+            I am based in Beijing and currently studying Intelligence Science and Technology at
+            Beijing University of Posts and Telecommunications. I like turning research ideas into
+            working systems, useful tools, and clear experiments.
+          </p>
+          <div class="actions" aria-label="Contact and profile links">
+            <a class="button primary" href="mailto:strike20023@outlook.com">Email me</a>
+            <a class="button secondary" href="https://github.com/strike20023">GitHub</a>
+            <a class="button secondary" href="#work">See my work</a>
+          </div>
+        </div>
+        <figure class="portrait-wrap">
+          <img
+            class="portrait"
+            src="https://github.com/strike20023.png"
+            alt="Portrait of Zhe Huang"
+            width="320"
+            height="320"
+          >
+          <figcaption>Beijing, China</figcaption>
+        </figure>
+      </section>
+
+      <section class="quick-facts" aria-label="Profile summary">
+        <article>
+          <span>Now</span>
+          <strong>BUPT, M.Eng.</strong>
+          <p>Intelligence Science and Technology, expected June 2026.</p>
+        </article>
+        <article>
+          <span>Home Base</span>
+          <strong>Beijing, China</strong>
+          <p>Working across academic projects, engineering practice, and open-source tools.</p>
+        </article>
+        <article>
+          <span>Tools</span>
+          <strong>Python &amp; AI Systems</strong>
+          <p>PyTorch, vLLM, Verl, Linux, data pipelines, and practical automation.</p>
+        </article>
+      </section>
+
+      <section id="about" class="section">
+        <div class="section-heading">
+          <p class="eyebrow">About</p>
+          <h2>A computer science student who enjoys building things that work.</h2>
+        </div>
+        <div class="two-column">
+          <p>
+            I studied Computer Science and Technology at Beijing Forestry University and now pursue
+            a master's degree at BUPT. My day-to-day work sits between machine learning research and
+            engineering: reading papers, reproducing methods, running experiments, writing code, and
+            making systems easier to use.
+          </p>
+          <ul class="check-list">
+            <li>Comfortable moving from problem formulation to implementation and evaluation.</li>
+            <li>Interested in AI systems, multimodal models, recommendation, and developer tools.</li>
+            <li>Prefer practical artifacts: runnable code, reproducible experiments, and clear notes.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="work" class="section section-alt">
+        <div class="section-heading">
+          <p class="eyebrow">Work</p>
+          <h2>Projects I have worked on.</h2>
+        </div>
+        <div class="project-grid">
+          <article class="project-card">
+            <h3>CARE</h3>
+            <p>Competence-aware reward shaping for adaptive reasoning length in Video-MLLMs.</p>
+            <ul>
+              <li>Designed dynamic rewards for GRPO-based reasoning control.</li>
+              <li>Improved reasoning efficiency and answer accuracy in video QA.</li>
+              <li>Validated adaptive behavior through ablations and case analyses.</li>
+            </ul>
+            <a href="https://github.com/1Pansy/Video-CARE">View code</a>
+          </article>
+          <article class="project-card">
+            <h3>VideoDR Benchmark</h3>
+            <p>Open-web video deep research benchmark for agentic video reasoning.</p>
+            <ul>
+              <li>Co-developed benchmark tasks for open-world video reasoning.</li>
+              <li>Built agents combining video understanding, web retrieval, and multi-hop reasoning.</li>
+              <li>Designed evaluation for retrieval consistency and evidence grounding.</li>
+            </ul>
+            <a href="https://github.com/QuantaAlpha/VideoDR-Benchmark">View code</a>
+          </article>
+          <article class="project-card">
+            <h3>Graph-Augmented Product Bundling</h3>
+            <p>LLM and graph architecture for product bundle construction.</p>
+            <ul>
+              <li>Combined Qwen2, LightGCN, and text-form graph injection.</li>
+              <li>Integrated MCTS strategies during decoding.</li>
+              <li>Evaluated on Alibaba POG and Steam datasets.</li>
+            </ul>
+          </article>
+          <article class="project-card">
+            <h3>Dialogue Generation</h3>
+            <p>Iterative prompt-enhanced large model dialogue generation.</p>
+            <ul>
+              <li>Built vLLM-based inference pipelines.</li>
+              <li>Used multi-sample generation and draft optimization.</li>
+              <li>Evaluated improvements on DailyDialog with Alpaca-7B and Vicuna-13B.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="writing" class="section">
+        <div class="section-heading">
+          <p class="eyebrow">Writing</p>
+          <h2>Publications and manuscripts.</h2>
+        </div>
+        <div class="pub-list">
+          <article class="publication">
+            <p class="pub-status">Preprint · 2026</p>
+            <h3>Watching, Reasoning, and Searching: A Video Deep Research Benchmark on Open Web for Agentic Video Reasoning</h3>
+            <p>Liu, C., Yu, X., Chang, Z., <strong>Huang, Z.</strong>, Zhang, S., Lian, H., Wang, K., Xu, R., Hu, S., Hou, J., Peng, H., Qin, C., Hu, X., Peng, H., Chen, R., &amp; Wang, H.</p>
+            <a href="https://doi.org/10.48550/ARXIV.2601.06943">doi.org/10.48550/ARXIV.2601.06943</a>
+          </article>
+          <article class="publication">
+            <p class="pub-status">Under Review · ICML 2026</p>
+            <h3>Reasoning as Intersection: VideoCFR for Visual Focus Alignment in Video-MLLMs</h3>
+            <p>A weakly supervised approach for aligning model focus with key video frames in video reasoning.</p>
+          </article>
+          <article class="publication">
+            <p class="pub-status">ICCCS · 2024</p>
+            <h3>Enhancing Dialogue Generation Through Iterative Prompt with Difference Analogy Learning</h3>
+            <p>Wang, M., <strong>Huang, Z.</strong>, Yuan, C., Liu, H., Liu, T., &amp; Wang, X. 2024 9th International Conference on Computer and Communication Systems, 1363-1368.</p>
+            <a href="https://doi.org/10.1109/ICCCS61882.2024.10603103">doi.org/10.1109/ICCCS61882.2024.10603103</a>
+          </article>
+          <article class="publication">
+            <p class="pub-status">In Preparation</p>
+            <h3>CARE: Competence-Aware Reward Shaping for Adaptive Reasoning Length in Video-MLLMs</h3>
+            <p>Adaptive reward shaping for efficient reasoning control in video question answering and reasoning tasks.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section-alt">
+        <div class="section-heading">
+          <p class="eyebrow">Experience and Skills</p>
+          <h2>From experiments to working pipelines.</h2>
+        </div>
+        <div class="experience-layout">
+          <article class="experience">
+            <p class="date">Oct 2024 - Dec 2025</p>
+            <h3>Algorithm Engineering Intern</h3>
+            <p>Beijing Zhi Jing Ling Technology Co., Ltd.</p>
+            <p>Worked on graph-augmented LLM product bundling, including method design, implementation, evaluation, and decoding optimization.</p>
+          </article>
+          <div class="skills" aria-label="Technical repertoire">
+            <span>Python</span>
+            <span>PyTorch</span>
+            <span>NumPy</span>
+            <span>Pandas</span>
+            <span>PEFT</span>
+            <span>LLaMA Factory</span>
+            <span>Verl</span>
+            <span>vLLM</span>
+            <span>Linux</span>
+            <span>Agent Frameworks</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer id="contact" class="footer">
+      <p>Open to collaboration, engineering projects, and conversations about useful AI systems.</p>
+      <a href="mailto:strike20023@outlook.com">strike20023@outlook.com</a>
+    </footer>
+  </body>
+</html>

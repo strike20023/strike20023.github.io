@@ -21,8 +21,7 @@ function copyPublicFiles(prefix, destination, omit = []) {
     cpSync(path.join(root, file), output);
   }
 }
-copyPublicFiles('blogs', path.join(input, 'blogs'), ['blogs/README.md']);
-cpSync(path.join(root, 'homepage/index.md'), path.join(input, 'index.md'));
+copyPublicFiles('blogs', input, ['blogs/README.md']);
 const require = createRequire(path.join(engine, 'package.json'));
 const YAML = require('yaml');
 const { slug: slugHeading } = require('github-slugger');
@@ -44,15 +43,13 @@ function prepareMarkdown(dir) {
   }
 }
 prepareMarkdown(input);
-execFileSync(process.execPath, ['quartz/bootstrap-cli.mjs', 'build', '-d', input, '-o', site, '--concurrency=2'], { cwd: engine, stdio: 'inherit' });
+execFileSync(process.execPath, ['quartz/bootstrap-cli.mjs', 'build', '-d', input, '-o', path.join(site, 'blogs'), '--concurrency=2'], { cwd: engine, stdio: 'inherit' });
 // Preserve the source files used by direct downloads and scripts.
-cpSync(path.join(input, 'blogs'), path.join(site, 'blogs'), { recursive: true });
-for (const dir of ['scripts', 'files']) copyPublicFiles(dir, path.join(site, dir));
+cpSync(input, path.join(site, 'blogs'), { recursive: true });
+for (const dir of ['homepage', 'scripts', 'files']) copyPublicFiles(dir, path.join(site, dir));
 cpSync(path.join(root, 'README.md'), path.join(site, 'README.md'));
-mkdirSync(path.join(site, 'homepage'), { recursive: true });
-cpSync(path.join(root, 'tools/quartz/legacy-assets/homepage-styles.css'), path.join(site, 'homepage/styles.css'));
-writeFileSync(path.join(site, 'homepage/index.html'), redirect('../'));
-writeFileSync(path.join(site, 'README.html'), redirect('./'));
+writeFileSync(path.join(site, 'index.html'), redirect('homepage/'));
+writeFileSync(path.join(site, 'README.html'), redirect('homepage/'));
 writeFileSync(path.join(site, '.nojekyll'), '');
 addCompatibility();
 console.log(`Built ${site}`);
